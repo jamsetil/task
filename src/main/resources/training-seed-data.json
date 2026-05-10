@@ -1,0 +1,13 @@
+{
+  "trainingId": "TR-001",
+  "traineeId": "T001",
+  "trainerId": "TRAINER-202",
+  "trainingName": "Strength Beginner Program",
+  "trainingType": [
+    {
+      "trainingTypeName": "STRENGTH"
+    }
+  ],
+  "trainingDate": "2026-05-10",
+  "trainingDuration": 60
+}

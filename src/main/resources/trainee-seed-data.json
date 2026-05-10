@@ -1,0 +1,24 @@
+{
+  "userId": "T001",
+  "firstName": "John",
+  "lastName": "Doe",
+  "userName": "john.doe",
+  "password": "securePassword123",
+  "isActive": true,
+  "dateOfBirth": "1998-05-21",
+  "address": "Baku, Azerbaijan",
+  "trainings": [
+    {
+      "traineeId": "T001",
+      "trainerId": "TRAINER-202",
+      "trainingName": "Strength Beginner Program",
+      "trainingType": [
+        {
+          "trainingTypeName": "STRENGTH"
+        }
+      ],
+      "trainingDate": "2026-05-10",
+      "trainingDuration": 60
+    }
+  ]
+}

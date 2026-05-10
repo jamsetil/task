@@ -1,0 +1,51 @@
+{
+  "userId": "TRAINER-202",
+  "firstName": "Ilyas",
+  "lastName": "Azizzade",
+  "userName": "ilyas.azizzade",
+  "password": "examplePassword",
+  "isActive": true,
+  "specialization": "Fitness",
+
+  "trainingTypes": [
+    {
+      "trainingTypeName": "Cardio"
+    },
+    {
+      "trainingTypeName": "Strength"
+    }
+  ],
+
+  "trainings": [
+    {
+      "trainingId": "TR-001",
+      "traineeId": "TRAINEE-101",
+      "trainerId": "TRAINER-202",
+      "trainingName": "Morning Cardio Session",
+
+      "trainingType": [
+        {
+          "trainingTypeName": "Cardio"
+        }
+      ],
+
+      "trainingDate": "2026-05-10",
+      "trainingDuration": 60
+    },
+    {
+      "trainingId": "TR-002",
+      "traineeId": "TRAINEE-102",
+      "trainerId": "TRAINER-202",
+      "trainingName": "Strength Beginner Program",
+
+      "trainingType": [
+        {
+          "trainingTypeName": "Strength"
+        }
+      ],
+
+      "trainingDate": "2026-05-11",
+      "trainingDuration": 45
+    }
+  ]
+}
