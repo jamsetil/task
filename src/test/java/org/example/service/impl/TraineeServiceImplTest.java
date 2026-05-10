@@ -114,9 +114,17 @@ class TraineeServiceImplTest {
     @Test
     void shouldDeleteTrainee() {
         String userId = "1";
+        Trainee trainee = MockData.getTrainee();
+
+        when(traineeDAO.find(userId))
+                .thenReturn(Optional.of(trainee));
 
         traineeService.deleteTrainee(userId);
 
+        verify(traineeDAO, times(1))
+                .find(userId);
+        verify(generator, times(1))
+                .removeUsername(trainee.getUserName());
         verify(traineeDAO, times(1))
                 .delete(userId);
     }

@@ -5,14 +5,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Configuration
 @ComponentScan(basePackages = "org.example")
@@ -26,16 +25,16 @@ public class AppConfig {
 
     @Bean("traineeTable")
     public Map<String, Trainee> traineeStorage() {
-        return new HashMap<>();
+        return new ConcurrentHashMap<>();
     }
 
     @Bean("trainerTable")
     public Map<String, Trainer> trainerStorage() {
-        return new HashMap<>();
+        return new ConcurrentHashMap<>();
     }
 
     @Bean("trainingTable")
     public Map<String, Training> trainingStorage() {
-        return new HashMap<>();
+        return new ConcurrentHashMap<>();
     }
 }

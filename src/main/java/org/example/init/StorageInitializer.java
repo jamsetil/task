@@ -62,10 +62,7 @@ public class StorageInitializer {
             trainerTable.put("1", trainer);
             trainingTable.put("1", training);
 
-            log.info("Seed data loaded successfully:");
-            log.info("Trainee loaded with key=1, name={} {}", trainee.getFirstName(), trainee.getLastName());
-            log.info("Trainer loaded with key=1, name={} {}", trainer.getFirstName(), trainer.getLastName());
-            log.info("Training loaded with key=1, name={}", training.getTrainingName());
+            log.info("Seed data loaded successfully for keys: trainee=1, trainer=1, training=1");
 
         } catch (IOException e) {
             log.error("Failed to initialize storage from seed files", e);

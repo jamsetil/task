@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.dao.TrainerDAO;
 import org.example.dto.request.TrainerRequestDTO;
 import org.example.dto.response.TrainerResponseDTO;
+import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainer;
 import org.example.service.TrainerService;
 import org.example.util.CredentialGenerator;
@@ -19,20 +20,15 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Autowired
     private TrainerDAO trainerDAO;
-
     @Autowired
     private CredentialGenerator generator;
-
     @Autowired
     private UserProfileUpdater profileUpdater;
 
     @Override
     public TrainerResponseDTO createTrainer(TrainerRequestDTO requestDTO) {
 
-        log.info("Creating trainer with firstName={}, lastName={}, specialization={}",
-                requestDTO.getFirstName(),
-                requestDTO.getLastName(),
-                requestDTO.getSpecialization());
+        log.info("Creating trainer profile");
 
         Trainer trainer = Trainer.builder()
                 .firstName(requestDTO.getFirstName())
@@ -53,9 +49,7 @@ public class TrainerServiceImpl implements TrainerService {
 
         trainerDAO.save(trainer);
 
-        log.info("Trainer created successfully with userId={}, userName={}",
-                trainer.getUserId(),
-                trainer.getUserName());
+        log.info("Trainer created successfully with userId={}", trainer.getUserId());
 
         return TrainerResponseDTO.builder()
                 .lastName(trainer.getLastName())
@@ -76,7 +70,7 @@ public class TrainerServiceImpl implements TrainerService {
         Trainer entity = trainerDAO.find(userId)
                 .orElseThrow(() -> {
                     log.error("Trainer not found for update, userId={}", userId);
-                    return new RuntimeException("Trainer not found with id: " + userId);
+                    return new ResourceNotFoundException("Trainer not found with id: " + userId);
                 });
 
         profileUpdater.updateUserProfile(requestDTO, entity);
@@ -99,7 +93,7 @@ public class TrainerServiceImpl implements TrainerService {
         var trainer = trainerDAO.find(userId)
                 .orElseThrow(() -> {
                     log.error("Trainer not found, userId={}", userId);
-                    return new RuntimeException("Trainer not found with username: " + userId);
+                    return new ResourceNotFoundException("Trainer not found with username: " + userId);
                 });
 
         log.info("Trainer fetched successfully, userId={}", userId);

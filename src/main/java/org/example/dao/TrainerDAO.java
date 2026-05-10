@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public class TrainerDAO {
 
-    private  Map<String, Trainer> trainerTable;
+    private Map<String, Trainer> trainerTable;
 
     @Autowired
     public void setTrainerTable(Map<String, Trainer> trainerTable) {

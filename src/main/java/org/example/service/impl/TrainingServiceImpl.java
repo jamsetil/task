@@ -3,6 +3,7 @@ package org.example.service.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dao.TrainingDAO;
 import org.example.dto.request.TrainingRequestDTO;
+import org.example.exception.ResourceNotFoundException;
 import org.example.model.Training;
 import org.example.service.TrainingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +21,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Override
     public Training createTraining(TrainingRequestDTO requestDTO) {
 
-        log.info("Creating training with name={}, traineeId={}, trainerId={}",
-                requestDTO.getTrainingName(),
-                requestDTO.getTraineeId(),
-                requestDTO.getTrainerId());
+        log.info("Creating training record");
 
         Training training = Training.builder()
                 .trainingId(UUID.randomUUID().toString())
@@ -49,7 +47,7 @@ public class TrainingServiceImpl implements TrainingService {
         return trainingDAO.find(trainingId)
                 .orElseThrow(() -> {
                     log.error("Training not found with trainingId={}", trainingId);
-                    return new RuntimeException("Training not found with id: " + trainingId);
+                    return new ResourceNotFoundException("Training not found with id: " + trainingId);
                 });
     }
 }

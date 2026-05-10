@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.dao.TraineeDAO;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.response.TraineeResponseDTO;
+import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainee;
 import org.example.service.TraineeService;
 import org.example.util.CredentialGenerator;
@@ -19,19 +20,15 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Autowired
     private TraineeDAO traineeDao;
-
     @Autowired
     private CredentialGenerator generator;
-
     @Autowired
     private UserProfileUpdater profileUpdater;
 
     @Override
     public TraineeResponseDTO createTrainee(TraineeRequestDTO requestDTO) {
 
-        log.info("Creating trainee with firstName={}, lastName={}",
-                requestDTO.getFirstName(),
-                requestDTO.getLastName());
+        log.info("Creating trainee profile");
 
         var trainee = Trainee.builder()
                 .firstName(requestDTO.getFirstName())
@@ -50,9 +47,7 @@ public class TraineeServiceImpl implements TraineeService {
 
         traineeDao.save(trainee);
 
-        log.info("Trainee created successfully with userId={}, userName={}",
-                trainee.getUserId(),
-                trainee.getUserName());
+        log.info("Trainee created successfully with userId={}", trainee.getUserId());
 
         return TraineeResponseDTO.builder()
                 .address(trainee.getAddress())
@@ -74,7 +69,7 @@ public class TraineeServiceImpl implements TraineeService {
         var entity = traineeDao.find(userId)
                 .orElseThrow(() -> {
                     log.error("Trainee not found for update, userId={}", userId);
-                    return new RuntimeException("Trainee not found with id: " + userId);
+                    return new ResourceNotFoundException("Trainee not found with id: " + userId);
                 });
 
         profileUpdater.updateUserProfile(requestDTO, entity);
@@ -91,6 +86,13 @@ public class TraineeServiceImpl implements TraineeService {
 
         log.warn("Deleting trainee with userId={}", userId);
 
+        var trainee = traineeDao.find(userId)
+                .orElseThrow(() -> {
+                    log.error("Trainee not found for delete, userId={}", userId);
+                    return new ResourceNotFoundException("Trainee not found with id: " + userId);
+                });
+
+        generator.removeUsername(trainee.getUserName());
         traineeDao.delete(userId);
 
         log.info("Trainee deleted successfully, userId={}", userId);
@@ -104,7 +106,7 @@ public class TraineeServiceImpl implements TraineeService {
         return traineeDao.find(userId)
                 .orElseThrow(() -> {
                     log.error("Trainee not found, userId={}", userId);
-                    return new RuntimeException("Trainee not found with userId: " + userId);
+                    return new ResourceNotFoundException("Trainee not found with userId: " + userId);
                 });
     }
 }
