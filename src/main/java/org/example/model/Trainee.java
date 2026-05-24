@@ -35,8 +35,7 @@ public class Trainee {
     @JoinColumn(name = "user_id")
     User user;
 
-    //1:N
-    @OneToMany
+    @OneToMany(mappedBy = "trainee", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Training> trainings;
 
     @ManyToMany

@@ -17,6 +17,7 @@ public class TrainerResponseDTO {
     String firstName;
     String lastName;
     String userName;
+    String password;
     Boolean isActive;
     String userId;
     String specialization;

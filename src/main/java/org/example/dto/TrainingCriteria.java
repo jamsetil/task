@@ -13,5 +13,6 @@ public class TrainingCriteria {
     LocalDate fromDate;
     LocalDate toDate;
     String trainerName;
+    String traineeName;
     String trainingType;
 }

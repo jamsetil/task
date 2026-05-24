@@ -16,12 +16,18 @@ public class CredentialGenerator {
 
     private final Map<String, AtomicInteger> usernameCounter = new HashMap<>();
 
-    @Value("${username-generator.char}")
-    private String chars;
+    private String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    @Value("${username-generator.char:}")
+    public void setCharsFromProperties(String configuredChars) {
+        if (configuredChars != null && !configuredChars.isBlank()) {
+            this.chars = configuredChars;
+        }
+    }
 
     public String generateUsername(String firstName, String lastName) {
 
-        String base = firstName + "." + lastName;
+        String base = (firstName + "." + lastName).toLowerCase();
 
         int count = usernameCounter
                 .getOrDefault(base, new AtomicInteger(0))

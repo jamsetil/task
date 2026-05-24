@@ -18,6 +18,7 @@ public class TraineeResponseDTO {
     Boolean isActive;
     String userId;
     String userName;
+    String password;
     String dateOfBirth;
     String address;
     List<Training> trainings;

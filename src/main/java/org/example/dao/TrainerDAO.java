@@ -85,6 +85,7 @@ public class TrainerDAO {
                     .getSingleResult();
 
             entity.getUser().setIsActive(!entity.getUser().getIsActive());
+            em.merge(entity);
 
             tx.commit();
 
@@ -108,10 +109,11 @@ public class TrainerDAO {
             return em.createQuery("""
                 SELECT tr
                 FROM Trainer tr
-                WHERE tr.trainerId NOT IN (
-                    SELECT t.trainer.trainerId
-                    FROM Training t
-                    WHERE t.trainee.user.userName = :username
+                WHERE tr NOT IN (
+                    SELECT assigned
+                    FROM Trainee t
+                    JOIN t.trainers assigned
+                    WHERE t.user.userName = :username
                 )
                 """, Trainer.class)
                     .setParameter("username", traineeUsername)

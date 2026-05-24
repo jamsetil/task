@@ -1,126 +1,86 @@
 package org.example;
 
 import org.example.config.AppConfig;
+import org.example.dto.TrainingCriteria;
 import org.example.dto.request.LoginRequestDTO;
-import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.TrainerRequestDTO;
 import org.example.dto.request.TrainingRequestDTO;
 import org.example.dto.request.create.TraineeCreateRequestDTO;
 import org.example.dto.request.create.TrainerCreateRequestDTO;
 import org.example.facade.GymCRM;
-import org.example.model.Trainee;
-import org.example.model.Trainer;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class Main {
 
-
     public static void main(String[] args) {
-
-
         AnnotationConfigApplicationContext context =
                 new AnnotationConfigApplicationContext(AppConfig.class);
         GymCRM gymCRM = context.getBean(GymCRM.class);
 
-        /*
-        creating profiles  for step 1-2 and persisting it
-         */
-//        TrainerCreateRequestDTO requestDTO = TrainerCreateRequestDTO.builder()
-//                .specializationName("Body Building")
-//                .lastName("Azizzade")
-//                .firstName("ilyas")
-//                .userName("ilyas_Azizzade")
-//                .isActive(true)
-//                .build();
-//
-//
-//        TraineeCreateRequestDTO traineeRequestDTO = TraineeCreateRequestDTO.builder()
-//                .dateOfBirth(java.time.LocalDate.of(1995, 5, 20))
-//                .address("123 Main St")
-//                .lastName("Smith")
-//                .firstName("John")
-//                .userName("john_smith")
-//                .isActive(true)
-//                .build();
-//
-//        gymCRM.createTrainer(requestDTO);
-//        gymCRM.createTrainee(traineeRequestDTO);
-
-        /*
-        selecting and username and password matching for step 3-6(including)
-         */
-
-        LoginRequestDTO loginRequestDTO = LoginRequestDTO.builder()
-                .username("john_smith")
-                .password("newPassword123")
+        TrainerCreateRequestDTO trainerRequest = TrainerCreateRequestDTO.builder()
+                .specializationName("Body Building")
+                .lastName("Azizzade")
+                .firstName("ilyas")
+                .isActive(true)
                 .build();
 
-        if (!gymCRM.traineeMatcher(loginRequestDTO)) {
-            System.out.println("Login failed for user: " + loginRequestDTO.getUsername());
+        TraineeCreateRequestDTO traineeRequest = TraineeCreateRequestDTO.builder()
+                .dateOfBirth(java.time.LocalDate.of(1995, 5, 20))
+                .address("123 Main St")
+                .lastName("Smith")
+                .firstName("John")
+                .isActive(true)
+                .build();
+
+        var createdTrainer = gymCRM.createTrainer(trainerRequest);
+        var createdTrainee = gymCRM.createTrainee(traineeRequest);
+
+        LoginRequestDTO traineeAuth = LoginRequestDTO.builder()
+                .username(createdTrainee.getUserName())
+                .password(createdTrainee.getPassword())
+                .build();
+
+        LoginRequestDTO trainerAuth = LoginRequestDTO.builder()
+                .username(createdTrainer.getUserName())
+                .password(createdTrainer.getPassword())
+                .build();
+
+        if (!gymCRM.traineeMatcher(traineeAuth)) {
+            System.out.println("Trainee login failed");
             return;
         }
 
-        System.out.println("Login successful for user: " + loginRequestDTO.getUsername());
+        System.out.println("Trainee login successful: " + traineeAuth.getUsername());
 
+        var trainer = gymCRM.getTrainer(trainerAuth, trainerAuth.getUsername());
+        System.out.println("Trainer: " + trainer.getUser().getFirstName() + " "
+                + trainer.getUser().getLastName());
 
-        Trainer trainer = gymCRM.getTrainer("ilyas_Azizzade");
+        var trainee = gymCRM.getTrainee(traineeAuth, traineeAuth.getUsername());
+        System.out.println("Trainee: " + trainee.getUser().getFirstName() + " "
+                + trainee.getUser().getLastName());
 
-        System.out.println("Trainer found: " + trainer.getUser().getFirstName() + " " + trainer.getUser().getLastName() +
-                ", specialization: " + trainer.getSpecialization().getTrainingTypeName());
+        gymCRM.updateTrainer(trainerAuth, trainerAuth.getUsername(), TrainerRequestDTO.builder()
+                .firstName("Ilyas")
+                .lastName("Azizzade")
+                .build());
 
-        Trainee trainee = gymCRM.getTrainee("john_smith");
-
-        System.out.println("Trainee found: " + trainee.getUser().getFirstName() + " " + trainee.getUser().getLastName() +
-                ", address: " + trainee.getAddress() + ", date of birth: " + trainee.getDateOfBirth());
-
-        /*
-        password changes for trainee and trainers step 7-8
-         */
-
-//        System.out.println(gymCRM.changeTraineePassword(
-//                "john_smith",
-//                "SLkCLWuDEc",
-//                "newPassword123"));
-
-//        System.out.println(gymCRM.changeTrainerPassword(
-//                "ilyas_Azizzade",
-//                "newPassword456",
-//                "newPassword454"));
-
-        /*
-        update trainer/trainee profile for step 9-10
-         */
-
-            TrainerRequestDTO trainerUpdateRequest = TrainerRequestDTO.builder()
-
-                    .firstName("Ilyasd Updated")
-                    .lastName("Azizzaded Updated")
-                    .build();
-
-            gymCRM.updateTrainer("ilyas_Azizzade", trainerUpdateRequest);
-
-//                TraineeRequestDTO traineeUpdateRequest = TraineeRequestDTO.builder()
-//
-//                        .firstName("John Updatedd")
-//                        .lastName("Smith Updatedd")
-//                        .address("456 New Address St")
-//                        .dateOfBirth(java.time.LocalDate.of(1990, 1, 1))
-//                        .build();
-//
-//                gymCRM.updateTrainee("john_smith", traineeUpdateRequest);
-
-//            gymCRM.toggleTraineeStatus("john_smith");
-
-//            gymCRM.trainerToggleStatus("ilyas_Azizzade");
-
-
-//        System.out.println(gymCRM.getTrainingsByCriteria("john_smith", null));
-        System.out.println(gymCRM.createTraining(TrainingRequestDTO.builder()
+        var training = gymCRM.createTraining(traineeAuth, TrainingRequestDTO.builder()
+                .traineeUsername(traineeAuth.getUsername())
+                .trainerUsername(trainerAuth.getUsername())
                 .trainingDuration(60)
                 .trainingName("Strength Training Session")
                 .trainingDate(java.time.LocalDate.now())
-                .trainingType(null).build()
-        ) +"training created successfully");
+                .trainingTypeName("Body Building")
+                .build());
 
+        System.out.println("Training created: " + training.getTrainingId());
+        System.out.println("Trainee trainings: "
+                + gymCRM.getTraineeTrainingsByCriteria(traineeAuth, traineeAuth.getUsername(), null).size());
+        System.out.println("Trainer trainings: "
+                + gymCRM.getTrainerTrainingsByCriteria(trainerAuth, trainerAuth.getUsername(),
+                TrainingCriteria.builder().traineeName("John").build()).size());
+        System.out.println("Unassigned trainers: "
+                + gymCRM.getUnassignedTrainers(traineeAuth, traineeAuth.getUsername()).size());
     }
 }

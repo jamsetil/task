@@ -2,6 +2,7 @@ package org.example.dto.request.base;
 
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,10 +20,6 @@ public class BaseCreateRequestDTO {
     String firstName;
     @NotBlank
     String lastName;
-    @NotBlank
-    String userName;
-    @NotBlank
-    String password;
-    @NotBlank
+    @NotNull
     Boolean isActive;
 }

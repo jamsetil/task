@@ -2,7 +2,8 @@ package org.example.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.example.model.TrainingType;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 
@@ -13,10 +14,16 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TrainingRequestDTO {
-    String traineeId;
-    String trainerId;
+    @NotBlank
+    String traineeUsername;
+    @NotBlank
+    String trainerUsername;
+    @NotBlank
     String trainingName;
-    TrainingType trainingType;
+    @NotBlank
+    String trainingTypeName;
+    @NotNull
     LocalDate trainingDate;
+    @NotNull
     Integer trainingDuration;
 }

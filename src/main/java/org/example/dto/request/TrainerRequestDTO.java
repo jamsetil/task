@@ -5,16 +5,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
-import org.example.dto.request.base.BaseCreateRequestDTO;
-import org.example.model.TrainingType;
-
-import java.util.List;
+import org.example.dto.request.base.BaseUpdateRequestDTO;
 
 @Getter
 @Setter
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TrainerRequestDTO extends BaseCreateRequestDTO {
-    String specialization;
-    List<TrainingType> trainingTypes;
+public class TrainerRequestDTO extends BaseUpdateRequestDTO {
 }

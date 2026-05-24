@@ -2,17 +2,22 @@ package org.example.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.dao.TraineeDAO;
+import org.example.dao.TrainerDAO;
+import org.example.dto.request.LoginRequestDTO;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.create.TraineeCreateRequestDTO;
 import org.example.dto.response.TraineeResponseDTO;
 import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainee;
+import org.example.model.Trainer;
 import org.example.model.base.User;
+import org.example.security.AuthValidator;
 import org.example.service.TraineeService;
 import org.example.util.CredentialGenerator;
-import org.example.util.UserProfileUpdater;
+import org.example.validation.RequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -23,24 +28,33 @@ public class TraineeServiceImpl implements TraineeService {
     @Autowired
     private TraineeDAO traineeDao;
     @Autowired
+    private TrainerDAO trainerDAO;
+    @Autowired
     private CredentialGenerator generator;
     @Autowired
-    private UserProfileUpdater profileUpdater;
+    private AuthValidator authValidator;
+    @Autowired
+    private RequestValidator requestValidator;
 
     @Override
+    @Transactional
     public TraineeResponseDTO createTrainee(TraineeCreateRequestDTO requestDTO) {
+        requestValidator.validate(requestDTO);
 
-        log.info("creaiting user profile for trainee");
+        log.info("Creating trainee profile for firstName={}, lastName={}",
+                requestDTO.getFirstName(), requestDTO.getLastName());
+
+        String username = generator.generateUsername(requestDTO.getFirstName(), requestDTO.getLastName());
+        String password = generator.generatePassword();
+
         User user = User.builder()
-                        .userName(requestDTO.getUserName())
-                                .firstName(requestDTO.getFirstName())
-                                        .lastName(requestDTO.getLastName())
-                                                .isActive(requestDTO.getIsActive())
-                                                        .password(generator.generatePassword())
-                                                                .build();
+                .userName(username)
+                .firstName(requestDTO.getFirstName())
+                .lastName(requestDTO.getLastName())
+                .isActive(requestDTO.getIsActive())
+                .password(password)
+                .build();
 
-
-        log.info("Creating trainee profile");
         Trainee trainee = Trainee.builder()
                 .address(requestDTO.getAddress())
                 .dateOfBirth(requestDTO.getDateOfBirth())
@@ -48,76 +62,69 @@ public class TraineeServiceImpl implements TraineeService {
                 .build();
 
         traineeDao.save(trainee);
-
-
-        log.info("Trainee created successfully with traineeId={}", trainee.getTraineeId());
+        log.info("Trainee created successfully with username={}", username);
 
         return TraineeResponseDTO.builder()
+                .userName(username)
+                .password(password)
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .isActive(user.getIsActive())
+                .userId(user.getUserId())
+                .address(trainee.getAddress())
+                .dateOfBirth(trainee.getDateOfBirth() != null ? trainee.getDateOfBirth().toString() : null)
                 .build();
     }
 
     @Override
-    public void updateTrainee(String username, TraineeRequestDTO requestDTO) {
+    @Transactional
+    public void updateTrainee(LoginRequestDTO auth, String username, TraineeRequestDTO requestDTO) {
+        authValidator.requireTrainee(auth, username);
         log.info("Updating trainee with username={}", username);
 
         Trainee trainee = traineeDao.find(username)
-                .orElseThrow(() -> {
-                    log.error("Trainee not found for update, username={}", username);
-                    return new ResourceNotFoundException(
-                            "Trainee not found with username: " + username
-                    );
-                });
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Trainee not found with username: " + username));
 
         if (requestDTO.getFirstName() != null) {
             trainee.getUser().setFirstName(requestDTO.getFirstName());
         }
-
         if (requestDTO.getLastName() != null) {
             trainee.getUser().setLastName(requestDTO.getLastName());
         }
-
         if (requestDTO.getUsername() != null) {
             trainee.getUser().setUserName(requestDTO.getUsername());
         }
-
-
         if (requestDTO.getIsActive() != null) {
             trainee.getUser().setIsActive(requestDTO.getIsActive());
         }
-
         if (requestDTO.getDateOfBirth() != null) {
             trainee.setDateOfBirth(requestDTO.getDateOfBirth());
         }
-
         if (requestDTO.getAddress() != null) {
             trainee.setAddress(requestDTO.getAddress());
         }
 
         traineeDao.update(username, trainee);
-
         log.info("Trainee updated successfully, username={}", username);
     }
 
     @Override
-    public void deleteTrainee(String userId) {
-
-        log.warn("Deleting trainee with userId={}", userId);
-
-        traineeDao.delete(userId);
-
-        log.info("Trainee deleted successfully, userId={}", userId);
+    @Transactional
+    public void deleteTrainee(LoginRequestDTO auth, String username) {
+        authValidator.requireTrainee(auth, username);
+        log.warn("Deleting trainee with username={}", username);
+        traineeDao.delete(username);
+        log.info("Trainee deleted successfully, username={}", username);
     }
 
     @Override
-    public Trainee getTrainee(String userId) {
-
-        log.debug("Fetching trainee with userId={}", userId);
-
-        return traineeDao.find(userId)
-                .orElseThrow(() -> {
-                    log.error("Trainee not found, userId={}", userId);
-                    return new ResourceNotFoundException("Trainee not found with userId: " + userId);
-                });
+    public Trainee getTrainee(LoginRequestDTO auth, String username) {
+        authValidator.requireTrainee(auth, username);
+        log.debug("Fetching trainee with username={}", username);
+        return traineeDao.find(username)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Trainee not found with username: " + username));
     }
 
     @Override
@@ -126,26 +133,38 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public boolean changePassword(String username, String oldPassword, String newPassword) {
-            var trainee = traineeDao.changePassword(username, oldPassword, newPassword);
-            if (trainee != null) {
-                log.info("Password changed successfully for username={}", username);
-                return true;
-            }
-            log.warn("Failed to change password for username={}, invalid old password", username);
+    @Transactional
+    public boolean changePassword(LoginRequestDTO auth, String oldPassword, String newPassword) {
+        authValidator.requireTrainee(auth, auth.getUsername());
+        Trainee trainee = traineeDao.changePassword(auth.getUsername(), oldPassword, newPassword);
+        if (trainee != null) {
+            log.info("Password changed successfully for username={}", auth.getUsername());
+            return true;
+        }
+        log.warn("Failed to change password for username={}, invalid old password", auth.getUsername());
         return false;
     }
 
     @Override
-    public Trainee changeStatus(String username) {
-
-        traineeDao.toggleStatus(username);
-
-        return null;
+    @Transactional
+    public Trainee changeStatus(LoginRequestDTO auth, String username) {
+        authValidator.requireTrainee(auth, username);
+        log.info("Toggling trainee active status, username={}", username);
+        return traineeDao.toggleStatus(username);
     }
 
     @Override
-    public void updateTraineeToTrainer(String username, List<String> trainerUsernames) {
+    @Transactional
+    public void updateTraineeTrainers(LoginRequestDTO auth, String username, List<String> trainerUsernames) {
+        authValidator.requireTrainee(auth, username);
+        log.info("Updating trainer list for trainee username={}", username);
         traineeDao.updateTraineeTrainers(username, trainerUsernames);
+    }
+
+    @Override
+    public List<Trainer> getUnassignedTrainers(LoginRequestDTO auth, String traineeUsername) {
+        authValidator.requireTrainee(auth, traineeUsername);
+        log.debug("Fetching unassigned trainers for trainee username={}", traineeUsername);
+        return trainerDAO.findTrainersNotAssignedToTrainee(traineeUsername);
     }
 }

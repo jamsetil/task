@@ -40,84 +40,79 @@ public class GymCRM {
         return traineeService.matchTrainee(loginRequest.getUsername(), loginRequest.getPassword());
     }
 
-    public List<Training> getTrainingsByCriteria(String traineeUsername, TrainingCriteria criteria) {
-        return trainingService.getAllTrainingsByTraineeUsername(traineeUsername, criteria);
-    }
-
-
-
-    /** Training
-     * Create, get
-     * @param trainer
-     * @return
-     */
-    public Training createTraining(TrainingRequestDTO trainer) {
-        return trainingService.createTraining(trainer);
-    }
-
-    public void updateTraineesTraining(String trainingId, List<String> traineeUsernames) {
-        traineeService.updateTraineeToTrainer(trainingId, traineeUsernames);
-    }
-
-    public Training getTraining(String trainingId) {
-        return trainingService.getTraining(trainingId);
-    }
-
-
-    /** Trainer
-     * Create, update, get
-     * @param trainer
-     * @return
-     */
     public TrainerResponseDTO createTrainer(TrainerCreateRequestDTO trainer) {
         return trainerService.createTrainer(trainer);
     }
 
-    public void updateTrainer(String username, TrainerRequestDTO trainer) {
-        trainerService.updateTrainer(username, trainer);
-    }
-
-    public Trainer getTrainer(String username) {
-        return trainerService.getTrainer(username);
-    }
-
-
-    /** Trainee
-     * Create, update, get, delete
-     * @param requestDTO
-     * @return
-     */
     public TraineeResponseDTO createTrainee(TraineeCreateRequestDTO requestDTO) {
         return traineeService.createTrainee(requestDTO);
     }
 
-    public void updateTrainee(String userId, TraineeRequestDTO requestDTO) {
-        traineeService.updateTrainee(userId, requestDTO);
+    public Trainer getTrainer(LoginRequestDTO auth, String username) {
+        return trainerService.getTrainer(auth, username);
     }
 
-    public Trainee toggleTraineeStatus(String username) {
-        return traineeService.changeStatus(username);
+    public Trainee getTrainee(LoginRequestDTO auth, String username) {
+        return traineeService.getTrainee(auth, username);
     }
 
-    public Trainer trainerToggleStatus(String username) {
-        return trainerService.toggleTrainerStatus(username);
+    public void updateTrainer(LoginRequestDTO auth, String username, TrainerRequestDTO trainer) {
+        trainerService.updateTrainer(auth, username, trainer);
     }
 
-    public void deleteTrainee(String username) {
-
-        traineeService.deleteTrainee(username);
+    public void updateTrainee(LoginRequestDTO auth, String username, TraineeRequestDTO requestDTO) {
+        traineeService.updateTrainee(auth, username, requestDTO);
     }
 
-    public Trainee getTrainee(String username) {
-        return traineeService.getTrainee(username);
+    public Trainer trainerToggleStatus(LoginRequestDTO auth, String username) {
+        return trainerService.toggleTrainerStatus(auth, username);
     }
 
-    public boolean changeTraineePassword(String username, String oldPassword, String newPassword) {
-        return traineeService.changePassword(username, oldPassword, newPassword);
+    public Trainee toggleTraineeStatus(LoginRequestDTO auth, String username) {
+        return traineeService.changeStatus(auth, username);
     }
 
-    public boolean changeTrainerPassword(String username, String oldPassword, String newPassword) {
-        return trainerService.changePassword(username, oldPassword, newPassword);
+    public void deleteTrainee(LoginRequestDTO auth, String username) {
+        traineeService.deleteTrainee(auth, username);
     }
 
+    public boolean changeTraineePassword(LoginRequestDTO auth, String oldPassword, String newPassword) {
+        return traineeService.changePassword(auth, oldPassword, newPassword);
+    }
+
+    public boolean changeTrainerPassword(LoginRequestDTO auth, String oldPassword, String newPassword) {
+        return trainerService.changePassword(auth, oldPassword, newPassword);
+    }
+
+    public List<Training> getTraineeTrainingsByCriteria(
+            LoginRequestDTO auth,
+            String traineeUsername,
+            TrainingCriteria criteria
+    ) {
+        return trainingService.getAllTrainingsByTraineeUsername(auth, traineeUsername, criteria);
+    }
+
+    public List<Training> getTrainerTrainingsByCriteria(
+            LoginRequestDTO auth,
+            String trainerUsername,
+            TrainingCriteria criteria
+    ) {
+        return trainingService.getAllTrainingsByTrainerUsername(auth, trainerUsername, criteria);
+    }
+
+    public Training createTraining(LoginRequestDTO auth, TrainingRequestDTO request) {
+        return trainingService.createTraining(auth, request);
+    }
+
+    public Training getTraining(LoginRequestDTO auth, String trainingId) {
+        return trainingService.getTraining(auth, trainingId);
+    }
+
+    public List<Trainer> getUnassignedTrainers(LoginRequestDTO auth, String traineeUsername) {
+        return traineeService.getUnassignedTrainers(auth, traineeUsername);
+    }
+
+    public void updateTraineeTrainers(LoginRequestDTO auth, String traineeUsername, List<String> trainerUsernames) {
+        traineeService.updateTraineeTrainers(auth, traineeUsername, trainerUsernames);
+    }
 }

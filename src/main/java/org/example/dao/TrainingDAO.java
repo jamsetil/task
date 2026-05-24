@@ -3,12 +3,12 @@ package org.example.dao;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.criteria.*;
+import lombok.RequiredArgsConstructor;
 import org.example.dto.TrainingCriteria;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.base.User;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -16,14 +16,28 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class TrainingDAO {
 
-    @Autowired
-    private  EntityManagerFactory emf;
-
+    private final EntityManagerFactory emf;
 
     public List<Training> findTrainingsByTraineeUsername(
             String traineeUsername,
+            TrainingCriteria criteria
+    ) {
+        return findTrainings(traineeUsername, null, criteria);
+    }
+
+    public List<Training> findTrainingsByTrainerUsername(
+            String trainerUsername,
+            TrainingCriteria criteria
+    ) {
+        return findTrainings(null, trainerUsername, criteria);
+    }
+
+    private List<Training> findTrainings(
+            String traineeUsername,
+            String trainerUsername,
             TrainingCriteria criteria
     ) {
         EntityManager em = emf.createEntityManager();
@@ -36,12 +50,18 @@ public class TrainingDAO {
 
             Join<Training, Trainee> trainee = training.join("trainee");
             Join<Trainee, User> traineeUser = trainee.join("user");
+            Join<Training, Trainer> trainer = training.join("trainer");
+            Join<Trainer, User> trainerUser = trainer.join("user");
 
             List<Predicate> predicates = new ArrayList<>();
 
-            predicates.add(
-                    cb.equal(traineeUser.get("userName"), traineeUsername)
-            );
+            if (traineeUsername != null) {
+                predicates.add(cb.equal(traineeUser.get("userName"), traineeUsername));
+            }
+
+            if (trainerUsername != null) {
+                predicates.add(cb.equal(trainerUser.get("userName"), trainerUsername));
+            }
 
             if (criteria != null) {
                 if (criteria.getFromDate() != null) {
@@ -63,15 +83,21 @@ public class TrainingDAO {
                 }
 
                 if (criteria.getTrainerName() != null && !criteria.getTrainerName().isBlank()) {
-                    Join<Training, Trainer> trainer = training.join("trainer");
-                    Join<Trainer, User> trainerUser = trainer.join("user");
-
                     String trainerName = "%" + criteria.getTrainerName().toLowerCase() + "%";
-
                     predicates.add(
                             cb.or(
                                     cb.like(cb.lower(trainerUser.get("firstName")), trainerName),
                                     cb.like(cb.lower(trainerUser.get("lastName")), trainerName)
+                            )
+                    );
+                }
+
+                if (criteria.getTraineeName() != null && !criteria.getTraineeName().isBlank()) {
+                    String traineeName = "%" + criteria.getTraineeName().toLowerCase() + "%";
+                    predicates.add(
+                            cb.or(
+                                    cb.like(cb.lower(traineeUser.get("firstName")), traineeName),
+                                    cb.like(cb.lower(traineeUser.get("lastName")), traineeName)
                             )
                     );
                 }
@@ -96,6 +122,7 @@ public class TrainingDAO {
             em.close();
         }
     }
+
     public Training save(Training training) {
         EntityManager em = emf.createEntityManager();
 
@@ -123,6 +150,8 @@ public class TrainingDAO {
     }
 
     public Optional<Training> find(String trainingId) {
-        return null;
+        try (EntityManager em = emf.createEntityManager()) {
+            return Optional.ofNullable(em.find(Training.class, trainingId));
+        }
     }
 }
