@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
+import org.example.dto.request.base.BaseUpdateRequestDTO;
 
 import java.time.LocalDate;
 
@@ -12,7 +13,7 @@ import java.time.LocalDate;
 @Setter
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TraineeRequestDTO extends BaseRequestDTO{
+public class TraineeRequestDTO extends BaseUpdateRequestDTO{
     LocalDate dateOfBirth;
     String address;
 

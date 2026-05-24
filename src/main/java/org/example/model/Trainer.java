@@ -1,10 +1,7 @@
 package org.example.model;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 import org.example.model.base.User;
@@ -17,10 +14,31 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Trainer extends User {
-    String userId;
-    String specialization;
+@Entity
+@NamedQueries({
+        @NamedQuery(
+                name = "findTrainerByUsernameAndPassword",
+                query = "SELECT t FROM Trainer t WHERE t.user.userName = :username AND t.user.password = :password"),
+        @NamedQuery(
+                name = "Trainer.findByUsername",
+        query = "SELECT t FROM Trainer t WHERE t.user.userName = :username")})
+public class Trainer {
+    @Id
+    @GeneratedValue(strategy = jakarta.persistence.GenerationType.UUID)
+    String trainerId;
+
+    @ManyToOne(optional = false, cascade = CascadeType.ALL)
+    @JoinColumn(name = "specialization_id", nullable = false)
+    private TrainingType specialization;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    User user;
     //1:N
+    @OneToMany(mappedBy = "trainer")
     List<Training> trainings;
-    List<TrainingType> trainingTypes;
+
+    @ManyToMany(mappedBy = "trainers")
+    List<Trainee> trainees;
+
 }

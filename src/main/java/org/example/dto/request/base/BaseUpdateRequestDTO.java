@@ -1,4 +1,4 @@
-package org.example.dto.request;
+package org.example.dto.request.base;
 
 
 import lombok.Getter;
@@ -13,7 +13,8 @@ import java.util.List;
 @Setter
 @SuperBuilder
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
-public class BaseRequestDTO {
+public class BaseUpdateRequestDTO {
+    String username;
     String firstName;
     String lastName;
     Boolean isActive;

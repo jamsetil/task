@@ -1,18 +1,22 @@
 package org.example.service.impl;
 
+
 import lombok.extern.slf4j.Slf4j;
 import org.example.dao.TrainerDAO;
 import org.example.dto.request.TrainerRequestDTO;
+import org.example.dto.request.create.TrainerCreateRequestDTO;
 import org.example.dto.response.TrainerResponseDTO;
-import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainer;
+import org.example.model.TrainingType;
+import org.example.model.base.User;
 import org.example.service.TrainerService;
 import org.example.util.CredentialGenerator;
 import org.example.util.UserProfileUpdater;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -26,87 +30,105 @@ public class TrainerServiceImpl implements TrainerService {
     private UserProfileUpdater profileUpdater;
 
     @Override
-    public TrainerResponseDTO createTrainer(TrainerRequestDTO requestDTO) {
+    @Transactional
+    public TrainerResponseDTO createTrainer(TrainerCreateRequestDTO requestDTO) {
 
         log.info("Creating trainer profile");
-
         Trainer trainer = Trainer.builder()
+                .build();
+
+        log.info("creating user profile for trainer with username={}", requestDTO.getUserName());
+
+
+        User user = User.builder()
+                .isActive(requestDTO.getIsActive())
                 .firstName(requestDTO.getFirstName())
                 .lastName(requestDTO.getLastName())
-                .isActive(requestDTO.getIsActive())
-                .specialization(requestDTO.getSpecialization())
-                .userId(UUID.randomUUID().toString())
-                .trainings(requestDTO.getTrainings())
-                .trainingTypes(requestDTO.getTrainingTypes())
+                .userName(requestDTO.getUserName())
+                .password(generator.generatePassword())
                 .build();
 
-        trainer.setUserName(generator.generateUsername(
-                trainer.getFirstName(),
-                trainer.getLastName()
-        ));
+        log.info("creating specialization (training type) for trainer with specializationIdOrName={}",
+                requestDTO.getSpecializationName());
 
-        trainer.setPassword(generator.generatePassword());
+
+        TrainingType specialization = TrainingType.builder()
+                .trainingTypeName(requestDTO.getSpecializationName())
+                .build();
+
+        trainer.setUser(user);
+        trainer.setSpecialization(specialization);
 
         trainerDAO.save(trainer);
-
-        log.info("Trainer created successfully with userId={}", trainer.getUserId());
-
+        log.info("Trainer profile created successfully, username={}", requestDTO.getUserName());
         return TrainerResponseDTO.builder()
-                .lastName(trainer.getLastName())
-                .isActive(trainer.getIsActive())
-                .userName(trainer.getUserName())
-                .firstName(trainer.getFirstName())
-                .specialization(trainer.getSpecialization())
-                .userId(trainer.getUserId())
-                .trainings(trainer.getTrainings())
+                .userName(trainer.getUser().getUserName())
                 .build();
     }
 
     @Override
-    public void updateTrainer(String userId, TrainerRequestDTO requestDTO) {
+    public void updateTrainer(String username, TrainerRequestDTO requestDTO) {
+        log.info("Updating trainer with username={}", username);
 
-        log.info("Updating trainer with userId={}", userId);
+        Trainer trainer = trainerDAO.find(username)
+                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
 
-        Trainer entity = trainerDAO.find(userId)
+        User user = trainer.getUser();
+
+        if (requestDTO.getFirstName() != null) {
+            user.setFirstName(requestDTO.getFirstName());
+        }
+
+        if (requestDTO.getLastName() != null) {
+            user.setLastName(requestDTO.getLastName());
+        }
+
+        if (requestDTO.getUserName() != null) {
+            user.setUserName(requestDTO.getUserName());
+        }
+
+        if (requestDTO.getIsActive() != null) {
+            user.setIsActive(requestDTO.getIsActive());
+        }
+
+
+        trainerDAO.update(username ,trainer);
+
+        log.info("Trainer updated successfully, username={}", username);
+    }
+    @Override
+    public Trainer getTrainer(String username) {
+
+        log.debug("Fetching trainer with userId={}", username);
+        return trainerDAO.find(username)
                 .orElseThrow(() -> {
-                    log.error("Trainer not found for update, userId={}", userId);
-                    return new ResourceNotFoundException("Trainer not found with id: " + userId);
+                    log.error("Trainer not found, userId={}", username);
+                    return new RuntimeException("Trainer not found with username: " + username);
                 });
-
-        profileUpdater.updateUserProfile(requestDTO, entity);
-
-        entity.setIsActive(requestDTO.getIsActive());
-        entity.setSpecialization(requestDTO.getSpecialization());
-        entity.setTrainings(requestDTO.getTrainings());
-        entity.setTrainingTypes(requestDTO.getTrainingTypes());
-
-        trainerDAO.update(userId, entity);
-
-        log.info("Trainer updated successfully, userId={}", userId);
     }
 
     @Override
-    public TrainerResponseDTO getTrainer(String userId) {
+    public Trainer toggleTrainerStatus(String username) {
+        return trainerDAO.toggleStatus(username);
+    }
 
-        log.debug("Fetching trainer with userId={}", userId);
+    @Override
+    public List<Trainer> getAllTrainersWithNoTrainee(String traineeUsername) {
+        return trainerDAO.findTrainersNotAssignedToTrainee(traineeUsername);
+    }
 
-        var trainer = trainerDAO.find(userId)
+    @Override
+    public boolean matchCredentials(String username, String password) {
+        return trainerDAO.matchTrainer(username, password);
+    }
+
+    @Override
+    public boolean changePassword(String username, String oldPassword, String newPassword) {
+        var trainer = trainerDAO.find(username)
                 .orElseThrow(() -> {
-                    log.error("Trainer not found, userId={}", userId);
-                    return new ResourceNotFoundException("Trainer not found with username: " + userId);
+                    log.error("Trainer not found for password change, userId={}", username);
+                    return new RuntimeException("Trainer not found with username: " + username);
                 });
-
-        log.info("Trainer fetched successfully, userId={}", userId);
-
-        return TrainerResponseDTO.builder()
-                .userId(trainer.getUserId())
-                .isActive(trainer.getIsActive())
-                .lastName(trainer.getLastName())
-                .trainings(trainer.getTrainings())
-                .trainingTypes(trainer.getTrainingTypes())
-                .specialization(trainer.getSpecialization())
-                .firstName(trainer.getFirstName())
-                .userName(trainer.getUserName())
-                .build();
+        return trainerDAO.changePassword(trainer.getUser().getUserName(), oldPassword, newPassword);
     }
 }

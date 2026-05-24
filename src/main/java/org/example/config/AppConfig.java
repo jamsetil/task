@@ -2,6 +2,8 @@ package org.example.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
@@ -22,6 +24,12 @@ public class AppConfig {
     public ObjectMapper objectMapper() {
         return new ObjectMapper().registerModule(new JavaTimeModule());
     }
+
+    @Bean
+    public EntityManagerFactory emf () {
+        return Persistence.createEntityManagerFactory("gym-crm");
+    }
+
 
     @Bean("traineeTable")
     public Map<String, Trainee> traineeStorage() {

@@ -3,16 +3,18 @@ package org.example.service.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dao.TraineeDAO;
 import org.example.dto.request.TraineeRequestDTO;
+import org.example.dto.request.create.TraineeCreateRequestDTO;
 import org.example.dto.response.TraineeResponseDTO;
 import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainee;
+import org.example.model.base.User;
 import org.example.service.TraineeService;
 import org.example.util.CredentialGenerator;
 import org.example.util.UserProfileUpdater;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -26,59 +28,74 @@ public class TraineeServiceImpl implements TraineeService {
     private UserProfileUpdater profileUpdater;
 
     @Override
-    public TraineeResponseDTO createTrainee(TraineeRequestDTO requestDTO) {
+    public TraineeResponseDTO createTrainee(TraineeCreateRequestDTO requestDTO) {
+
+        log.info("creaiting user profile for trainee");
+        User user = User.builder()
+                        .userName(requestDTO.getUserName())
+                                .firstName(requestDTO.getFirstName())
+                                        .lastName(requestDTO.getLastName())
+                                                .isActive(requestDTO.getIsActive())
+                                                        .password(generator.generatePassword())
+                                                                .build();
+
 
         log.info("Creating trainee profile");
-
-        var trainee = Trainee.builder()
-                .firstName(requestDTO.getFirstName())
-                .lastName(requestDTO.getLastName())
-                .isActive(requestDTO.getIsActive())
-                .userId(UUID.randomUUID().toString())
-                .dateOfBirth(requestDTO.getDateOfBirth())
-                .userName(generator.generateUsername(
-                        requestDTO.getFirstName(),
-                        requestDTO.getLastName()
-                ))
+        Trainee trainee = Trainee.builder()
                 .address(requestDTO.getAddress())
-                .password(generator.generatePassword())
-                .trainings(requestDTO.getTrainings())
+                .dateOfBirth(requestDTO.getDateOfBirth())
+                .user(user)
                 .build();
 
         traineeDao.save(trainee);
 
-        log.info("Trainee created successfully with userId={}", trainee.getUserId());
+
+        log.info("Trainee created successfully with traineeId={}", trainee.getTraineeId());
 
         return TraineeResponseDTO.builder()
-                .address(trainee.getAddress())
-                .dateOfBirth(trainee.getDateOfBirth().toString())
-                .firstName(trainee.getFirstName())
-                .isActive(trainee.getIsActive())
-                .lastName(trainee.getLastName())
-                .trainings(trainee.getTrainings())
-                .userId(trainee.getUserId())
-                .userName(trainee.getUserName())
                 .build();
     }
 
     @Override
-    public void updateTrainee(String userId, TraineeRequestDTO requestDTO) {
+    public void updateTrainee(String username, TraineeRequestDTO requestDTO) {
+        log.info("Updating trainee with username={}", username);
 
-        log.info("Updating trainee with userId={}", userId);
-
-        var entity = traineeDao.find(userId)
+        Trainee trainee = traineeDao.find(username)
                 .orElseThrow(() -> {
-                    log.error("Trainee not found for update, userId={}", userId);
-                    return new ResourceNotFoundException("Trainee not found with id: " + userId);
+                    log.error("Trainee not found for update, username={}", username);
+                    return new ResourceNotFoundException(
+                            "Trainee not found with username: " + username
+                    );
                 });
 
-        profileUpdater.updateUserProfile(requestDTO, entity);
+        if (requestDTO.getFirstName() != null) {
+            trainee.getUser().setFirstName(requestDTO.getFirstName());
+        }
 
-        entity.setIsActive(requestDTO.getIsActive());
-        entity.setAddress(requestDTO.getAddress());
-        entity.setTrainings(requestDTO.getTrainings());
+        if (requestDTO.getLastName() != null) {
+            trainee.getUser().setLastName(requestDTO.getLastName());
+        }
 
-        log.info("Trainee updated successfully, userId={}", userId);
+        if (requestDTO.getUsername() != null) {
+            trainee.getUser().setUserName(requestDTO.getUsername());
+        }
+
+
+        if (requestDTO.getIsActive() != null) {
+            trainee.getUser().setIsActive(requestDTO.getIsActive());
+        }
+
+        if (requestDTO.getDateOfBirth() != null) {
+            trainee.setDateOfBirth(requestDTO.getDateOfBirth());
+        }
+
+        if (requestDTO.getAddress() != null) {
+            trainee.setAddress(requestDTO.getAddress());
+        }
+
+        traineeDao.update(username, trainee);
+
+        log.info("Trainee updated successfully, username={}", username);
     }
 
     @Override
@@ -86,13 +103,6 @@ public class TraineeServiceImpl implements TraineeService {
 
         log.warn("Deleting trainee with userId={}", userId);
 
-        var trainee = traineeDao.find(userId)
-                .orElseThrow(() -> {
-                    log.error("Trainee not found for delete, userId={}", userId);
-                    return new ResourceNotFoundException("Trainee not found with id: " + userId);
-                });
-
-        generator.removeUsername(trainee.getUserName());
         traineeDao.delete(userId);
 
         log.info("Trainee deleted successfully, userId={}", userId);
@@ -108,5 +118,34 @@ public class TraineeServiceImpl implements TraineeService {
                     log.error("Trainee not found, userId={}", userId);
                     return new ResourceNotFoundException("Trainee not found with userId: " + userId);
                 });
+    }
+
+    @Override
+    public boolean matchTrainee(String username, String password) {
+        return traineeDao.matchTrainee(username, password);
+    }
+
+    @Override
+    public boolean changePassword(String username, String oldPassword, String newPassword) {
+            var trainee = traineeDao.changePassword(username, oldPassword, newPassword);
+            if (trainee != null) {
+                log.info("Password changed successfully for username={}", username);
+                return true;
+            }
+            log.warn("Failed to change password for username={}, invalid old password", username);
+        return false;
+    }
+
+    @Override
+    public Trainee changeStatus(String username) {
+
+        traineeDao.toggleStatus(username);
+
+        return null;
+    }
+
+    @Override
+    public void updateTraineeToTrainer(String username, List<String> trainerUsernames) {
+        traineeDao.updateTraineeTrainers(username, trainerUsernames);
     }
 }

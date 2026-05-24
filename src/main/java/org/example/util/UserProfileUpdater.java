@@ -1,7 +1,7 @@
 package org.example.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.dto.request.BaseRequestDTO;
+import org.example.dto.request.base.BaseUpdateRequestDTO;
 import org.example.model.base.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -17,7 +17,7 @@ public class UserProfileUpdater {
         this.generator = generator;
     }
 
-    public void updateUserProfile(BaseRequestDTO requestDTO, User entity) {
+    public void updateUserProfile(BaseUpdateRequestDTO requestDTO, User entity) {
 
         log.debug("Updating user profile for userName={}", entity.getUserName());
 
