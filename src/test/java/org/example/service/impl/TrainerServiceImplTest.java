@@ -124,6 +124,7 @@ class TrainerServiceImplTest {
 
         trainerService.updateTrainer(auth, "trainer", request);
 
+        verify(requestValidator).validateUpdate(request);
         assertEquals("New", trainer.getUser().getFirstName());
         assertEquals("Trainer", trainer.getUser().getLastName());
         assertEquals("new.trainer", trainer.getUser().getUserName());
@@ -150,6 +151,18 @@ class TrainerServiceImplTest {
         assertEquals("Old", trainer.getUser().getFirstName());
         assertTrue(trainer.getUser().getIsActive());
         verify(trainerDAO).update("trainer", trainer);
+    }
+
+    @Test
+    void updateTrainer_blankLastName_throws() {
+        var auth = LoginRequestDTO.builder().username("trainer").password("pwd").build();
+        var request = TrainerRequestDTO.builder().lastName("").build();
+        doThrow(new IllegalArgumentException("Validation failed"))
+                .when(requestValidator).validateUpdate(request);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> trainerService.updateTrainer(auth, "trainer", request));
+        verify(trainerDAO, never()).find(any());
     }
 
     @Test

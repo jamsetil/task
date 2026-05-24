@@ -78,6 +78,7 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     @Transactional
     public void updateTrainer(LoginRequestDTO auth, String username, TrainerRequestDTO requestDTO) {
+        requestValidator.validateUpdate(requestDTO);
         authValidator.requireTrainer(auth, username);
         log.info("Updating trainer with username={}", username);
 

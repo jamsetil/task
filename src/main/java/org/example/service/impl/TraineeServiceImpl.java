@@ -79,6 +79,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     @Transactional
     public void updateTrainee(LoginRequestDTO auth, String username, TraineeRequestDTO requestDTO) {
+        requestValidator.validateTraineeUpdate(requestDTO);
         authValidator.requireTrainee(auth, username);
         log.info("Updating trainee with username={}", username);
 
@@ -156,6 +157,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     @Transactional
     public void updateTraineeTrainers(LoginRequestDTO auth, String username, List<String> trainerUsernames) {
+        requestValidator.validateTrainerUsernames(trainerUsernames);
         authValidator.requireTrainee(auth, username);
         log.info("Updating trainer list for trainee username={}", username);
         traineeDao.updateTraineeTrainers(username, trainerUsernames);

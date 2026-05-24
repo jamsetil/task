@@ -111,6 +111,7 @@ class TraineeServiceImplTest {
 
         traineeService.updateTrainee(auth, "john.smith", request);
 
+        verify(requestValidator).validateTraineeUpdate(request);
         assertEquals("Johnny", trainee.getUser().getFirstName());
         assertEquals("Smithson", trainee.getUser().getLastName());
         assertEquals("johnny.smith", trainee.getUser().getUserName());
@@ -142,6 +143,18 @@ class TraineeServiceImplTest {
         assertEquals("John", trainee.getUser().getFirstName());
         assertEquals("old", trainee.getAddress());
         verify(traineeDAO).update("john.smith", trainee);
+    }
+
+    @Test
+    void updateTrainee_blankFirstName_throws() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        var request = TraineeRequestDTO.builder().firstName("  ").build();
+        doThrow(new IllegalArgumentException("Validation failed"))
+                .when(requestValidator).validateTraineeUpdate(request);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> traineeService.updateTrainee(auth, "john.smith", request));
+        verify(traineeDAO, never()).find(any());
     }
 
     @Test
@@ -220,7 +233,9 @@ class TraineeServiceImplTest {
     @Test
     void updateTraineeTrainers_delegatesToDao() {
         var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        traineeService.updateTraineeTrainers(auth, "john.smith", java.util.List.of("trainer1"));
-        verify(traineeDAO).updateTraineeTrainers("john.smith", java.util.List.of("trainer1"));
+        var trainers = java.util.List.of("trainer1");
+        traineeService.updateTraineeTrainers(auth, "john.smith", trainers);
+        verify(requestValidator).validateTrainerUsernames(trainers);
+        verify(traineeDAO).updateTraineeTrainers("john.smith", trainers);
     }
 }

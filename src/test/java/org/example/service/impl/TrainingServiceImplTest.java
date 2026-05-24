@@ -211,6 +211,24 @@ class TrainingServiceImplTest {
     }
 
     @Test
+    void createTraining_invalidDuration_throws() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        var request = TrainingRequestDTO.builder()
+                .traineeUsername("john.smith")
+                .trainerUsername("ilyas.azizzade")
+                .trainingName("Cardio")
+                .trainingTypeName("Cardio")
+                .trainingDate(LocalDate.now())
+                .trainingDuration(0)
+                .build();
+        doThrow(new IllegalArgumentException("Validation failed"))
+                .when(requestValidator).validate(request);
+
+        assertThrows(IllegalArgumentException.class, () -> trainingService.createTraining(auth, request));
+        verify(traineeDAO, never()).find(any());
+    }
+
+    @Test
     void getTraining_notFound_throws() {
         var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
         when(trainingDAO.find("missing")).thenReturn(Optional.empty());

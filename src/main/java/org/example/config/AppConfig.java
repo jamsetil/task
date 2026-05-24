@@ -20,29 +20,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @PropertySource("classpath:application.properties")
 public class AppConfig {
 
-    @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper().registerModule(new JavaTimeModule());
-    }
 
     @Bean
     public EntityManagerFactory emf () {
         return Persistence.createEntityManagerFactory("gym-crm");
     }
 
-
-    @Bean("traineeTable")
-    public Map<String, Trainee> traineeStorage() {
-        return new ConcurrentHashMap<>();
-    }
-
-    @Bean("trainerTable")
-    public Map<String, Trainer> trainerStorage() {
-        return new ConcurrentHashMap<>();
-    }
-
-    @Bean("trainingTable")
-    public Map<String, Training> trainingStorage() {
-        return new ConcurrentHashMap<>();
-    }
 }
