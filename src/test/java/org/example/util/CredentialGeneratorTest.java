@@ -29,4 +29,24 @@ class CredentialGeneratorTest {
     void generatePassword_returnsConfiguredLength() {
         assertEquals(10, generator.generatePassword().length());
     }
+
+    @Test
+    void removeUsername_clearsCounterTracking() {
+        generator.generateUsername("John", "Smith");
+        generator.removeUsername("john.smith");
+        assertEquals("john.smith", generator.generateUsername("John", "Smith"));
+    }
+
+    @Test
+    void setCharsFromProperties_usesConfiguredAlphabet() {
+        generator.setCharsFromProperties("ABC");
+        String password = generator.generatePassword();
+        assertTrue(password.chars().allMatch(c -> c == 'A' || c == 'B' || c == 'C'));
+    }
+
+    @Test
+    void setCharsFromProperties_blank_keepsDefault() {
+        generator.setCharsFromProperties("   ");
+        assertEquals(10, generator.generatePassword().length());
+    }
 }

@@ -115,4 +115,89 @@ class TrainingServiceImplTest {
 
         assertTrue(trainingService.getAllTrainingsByTrainerUsername(auth, "trainer", null).isEmpty());
     }
+
+    @Test
+    void createTraining_inactiveTrainee_throws() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        var request = TrainingRequestDTO.builder()
+                .traineeUsername("john.smith")
+                .trainerUsername("ilyas.azizzade")
+                .trainingName("Cardio")
+                .trainingTypeName("Cardio")
+                .trainingDate(LocalDate.now())
+                .trainingDuration(45)
+                .build();
+
+        var trainee = Trainee.builder()
+                .user(User.builder().isActive(false).build())
+                .build();
+        when(traineeDAO.find("john.smith")).thenReturn(Optional.of(trainee));
+        when(trainerDAO.find("ilyas.azizzade")).thenReturn(Optional.of(
+                Trainer.builder().user(User.builder().isActive(true).build()).build()));
+        when(trainingTypeDAO.findByName("Cardio")).thenReturn(Optional.of(
+                TrainingType.builder().trainingTypeName("Cardio").build()));
+
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(auth, request));
+    }
+
+    @Test
+    void createTraining_inactiveTrainer_throws() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        var request = TrainingRequestDTO.builder()
+                .traineeUsername("john.smith")
+                .trainerUsername("ilyas.azizzade")
+                .trainingName("Cardio")
+                .trainingTypeName("Cardio")
+                .trainingDate(LocalDate.now())
+                .trainingDuration(45)
+                .build();
+
+        when(traineeDAO.find("john.smith")).thenReturn(Optional.of(
+                Trainee.builder().user(User.builder().isActive(true).build()).build()));
+        when(trainerDAO.find("ilyas.azizzade")).thenReturn(Optional.of(
+                Trainer.builder().user(User.builder().isActive(false).build()).build()));
+        when(trainingTypeDAO.findByName("Cardio")).thenReturn(Optional.of(
+                TrainingType.builder().trainingTypeName("Cardio").build()));
+
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(auth, request));
+    }
+
+    @Test
+    void createTraining_missingTrainingType_throws() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        var request = TrainingRequestDTO.builder()
+                .traineeUsername("john.smith")
+                .trainerUsername("ilyas.azizzade")
+                .trainingName("Cardio")
+                .trainingTypeName("Unknown")
+                .trainingDate(LocalDate.now())
+                .trainingDuration(45)
+                .build();
+
+        when(traineeDAO.find("john.smith")).thenReturn(Optional.of(
+                Trainee.builder().user(User.builder().isActive(true).build()).build()));
+        when(trainerDAO.find("ilyas.azizzade")).thenReturn(Optional.of(
+                Trainer.builder().user(User.builder().isActive(true).build()).build()));
+        when(trainingTypeDAO.findByName("Unknown")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(auth, request));
+    }
+
+    @Test
+    void getTraining_returnsEntity() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        var training = Training.builder().trainingId("id-1").build();
+        when(trainingDAO.find("id-1")).thenReturn(Optional.of(training));
+
+        assertEquals("id-1", trainingService.getTraining(auth, "id-1").getTrainingId());
+        verify(authValidator).requireTrainee(auth, "john.smith");
+    }
+
+    @Test
+    void getTraining_notFound_throws() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        when(trainingDAO.find("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> trainingService.getTraining(auth, "missing"));
+    }
 }

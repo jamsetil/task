@@ -25,7 +25,10 @@ public class TraineeDAO {
             em.persist(trainee);
             em.getTransaction().commit();
         } catch (Exception e) {
-            em.getTransaction().rollback();
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            throw e;
         } finally {
             em.close();
         }
@@ -187,16 +190,17 @@ public class TraineeDAO {
         try {
             tx.begin();
 
-            Trainee trainee = em.createNamedQuery(
-                            "Trainee.findByUsername",
-                            Trainee.class
-                    )
+            Trainee trainee = em.createQuery("""
+                            SELECT t
+                            FROM Trainee t
+                            LEFT JOIN FETCH t.trainings
+                            LEFT JOIN FETCH t.user
+                            WHERE t.user.userName = :username
+                            """, Trainee.class)
                     .setParameter("username", username)
                     .getSingleResult();
 
-            if (trainee != null) {
-                em.remove(trainee);
-            }
+            em.remove(trainee);
 
             tx.commit();
 

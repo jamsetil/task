@@ -117,4 +117,29 @@ class TraineeServiceImplTest {
 
         assertTrue(traineeService.getUnassignedTrainers(auth, "john.smith").isEmpty());
     }
+
+    @Test
+    void getTrainee_returnsEntity() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        var trainee = Trainee.builder().user(User.builder().userName("john.smith").build()).build();
+        when(traineeDAO.find("john.smith")).thenReturn(Optional.of(trainee));
+
+        assertSame(trainee, traineeService.getTrainee(auth, "john.smith"));
+    }
+
+    @Test
+    void changePassword_success_returnsTrue() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        var trainee = Trainee.builder().user(User.builder().userName("john.smith").build()).build();
+        when(traineeDAO.changePassword("john.smith", "old", "new")).thenReturn(trainee);
+
+        assertTrue(traineeService.changePassword(auth, "old", "new"));
+    }
+
+    @Test
+    void updateTraineeTrainers_delegatesToDao() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        traineeService.updateTraineeTrainers(auth, "john.smith", java.util.List.of("trainer1"));
+        verify(traineeDAO).updateTraineeTrainers("john.smith", java.util.List.of("trainer1"));
+    }
 }

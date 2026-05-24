@@ -13,7 +13,6 @@ import org.example.model.base.User;
 import org.example.security.AuthValidator;
 import org.example.service.TrainerService;
 import org.example.util.CredentialGenerator;
-import org.example.util.UserProfileUpdater;
 import org.example.validation.RequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,8 +28,6 @@ public class TrainerServiceImpl implements TrainerService {
     private TrainingTypeDAO trainingTypeDAO;
     @Autowired
     private CredentialGenerator generator;
-    @Autowired
-    private UserProfileUpdater profileUpdater;
     @Autowired
     private AuthValidator authValidator;
     @Autowired
@@ -131,6 +128,12 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional
     public boolean changePassword(LoginRequestDTO auth, String oldPassword, String newPassword) {
         authValidator.requireTrainer(auth, auth.getUsername());
-        return trainerDAO.changePassword(auth.getUsername(), oldPassword, newPassword);
+        boolean changed = trainerDAO.changePassword(auth.getUsername(), oldPassword, newPassword);
+        if (changed) {
+            log.info("Password changed successfully for username={}", auth.getUsername());
+        } else {
+            log.warn("Failed to change password for username={}, invalid old password", auth.getUsername());
+        }
+        return changed;
     }
 }

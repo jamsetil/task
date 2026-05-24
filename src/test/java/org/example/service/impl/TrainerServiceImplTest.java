@@ -119,10 +119,26 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void changePassword_delegatesToDao() {
+    void changePassword_success_returnsTrue() {
         var auth = LoginRequestDTO.builder().username("trainer").password("pwd").build();
         when(trainerDAO.changePassword("trainer", "old", "new")).thenReturn(true);
 
         assertTrue(trainerService.changePassword(auth, "old", "new"));
+    }
+
+    @Test
+    void changePassword_failure_returnsFalse() {
+        var auth = LoginRequestDTO.builder().username("trainer").password("pwd").build();
+        when(trainerDAO.changePassword("trainer", "old", "new")).thenReturn(false);
+
+        assertFalse(trainerService.changePassword(auth, "old", "new"));
+    }
+
+    @Test
+    void getTrainer_notFound_throws() {
+        var auth = LoginRequestDTO.builder().username("trainer").password("pwd").build();
+        when(trainerDAO.find("trainer")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> trainerService.getTrainer(auth, "trainer"));
     }
 }

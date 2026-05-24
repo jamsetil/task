@@ -27,7 +27,7 @@ public class Trainer {
     @GeneratedValue(strategy = jakarta.persistence.GenerationType.UUID)
     String trainerId;
 
-    @ManyToOne(optional = false, cascade = CascadeType.ALL)
+    @ManyToOne(optional = false)
     @JoinColumn(name = "specialization_id", nullable = false)
     private TrainingType specialization;
 
