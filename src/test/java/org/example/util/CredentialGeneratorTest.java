@@ -26,6 +26,13 @@ class CredentialGeneratorTest {
     }
 
     @Test
+    void generateUsername_thirdDuplicateAppendsCounter() {
+        generator.generateUsername("Jane", "Doe");
+        generator.generateUsername("Jane", "Doe");
+        assertEquals("jane.doe3", generator.generateUsername("Jane", "Doe"));
+    }
+
+    @Test
     void generatePassword_returnsConfiguredLength() {
         assertEquals(10, generator.generatePassword().length());
     }
@@ -47,6 +54,12 @@ class CredentialGeneratorTest {
     @Test
     void setCharsFromProperties_blank_keepsDefault() {
         generator.setCharsFromProperties("   ");
+        assertEquals(10, generator.generatePassword().length());
+    }
+
+    @Test
+    void setCharsFromProperties_null_keepsDefault() {
+        generator.setCharsFromProperties(null);
         assertEquals(10, generator.generatePassword().length());
     }
 }

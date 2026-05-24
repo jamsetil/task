@@ -81,6 +81,23 @@ class TrainingServiceImplTest {
     }
 
     @Test
+    void createTraining_missingTrainee_throws() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        var request = TrainingRequestDTO.builder()
+                .traineeUsername("missing")
+                .trainerUsername("ilyas.azizzade")
+                .trainingName("Cardio")
+                .trainingTypeName("Cardio")
+                .trainingDate(LocalDate.now())
+                .trainingDuration(45)
+                .build();
+
+        when(traineeDAO.find("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(auth, request));
+    }
+
+    @Test
     void createTraining_missingTrainer_throws() {
         var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
         var request = TrainingRequestDTO.builder()

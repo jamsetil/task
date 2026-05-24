@@ -5,6 +5,7 @@ import org.example.dao.TrainerDAO;
 import org.example.dto.request.LoginRequestDTO;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.create.TraineeCreateRequestDTO;
+import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.base.User;
 import org.example.security.AuthValidator;
@@ -83,18 +84,90 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    void updateTrainee_updatesProfileFields() {
+    void updateTrainee_updatesAllFields() {
         var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        var user = User.builder().userName("john.smith").firstName("John").lastName("Smith").build();
-        var trainee = Trainee.builder().user(user).address("old").build();
-        var request = TraineeRequestDTO.builder().address("new").build();
+        var user = User.builder()
+                .userName("john.smith")
+                .firstName("John")
+                .lastName("Smith")
+                .isActive(true)
+                .build();
+        var trainee = Trainee.builder()
+                .user(user)
+                .address("old")
+                .dateOfBirth(LocalDate.of(1990, 1, 1))
+                .build();
+        var request = TraineeRequestDTO.builder()
+                .firstName("Johnny")
+                .lastName("Smithson")
+                .username("johnny.smith")
+                .isActive(false)
+                .address("new")
+                .dateOfBirth(LocalDate.of(1995, 5, 20))
+                .build();
 
         when(traineeDAO.find("john.smith")).thenReturn(Optional.of(trainee));
         when(traineeDAO.update("john.smith", trainee)).thenReturn(trainee);
 
         traineeService.updateTrainee(auth, "john.smith", request);
 
+        assertEquals("Johnny", trainee.getUser().getFirstName());
+        assertEquals("Smithson", trainee.getUser().getLastName());
+        assertEquals("johnny.smith", trainee.getUser().getUserName());
+        assertFalse(trainee.getUser().getIsActive());
         assertEquals("new", trainee.getAddress());
+        assertEquals(LocalDate.of(1995, 5, 20), trainee.getDateOfBirth());
+    }
+
+    @Test
+    void updateTrainee_emptyRequest_doesNotChangeFields() {
+        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
+        var user = User.builder()
+                .userName("john.smith")
+                .firstName("John")
+                .lastName("Smith")
+                .isActive(true)
+                .build();
+        var trainee = Trainee.builder()
+                .user(user)
+                .address("old")
+                .dateOfBirth(LocalDate.of(1990, 1, 1))
+                .build();
+
+        when(traineeDAO.find("john.smith")).thenReturn(Optional.of(trainee));
+        when(traineeDAO.update("john.smith", trainee)).thenReturn(trainee);
+
+        traineeService.updateTrainee(auth, "john.smith", TraineeRequestDTO.builder().build());
+
+        assertEquals("John", trainee.getUser().getFirstName());
+        assertEquals("old", trainee.getAddress());
+        verify(traineeDAO).update("john.smith", trainee);
+    }
+
+    @Test
+    void updateTrainee_notFound_throws() {
+        var auth = LoginRequestDTO.builder().username("missing").password("pwd").build();
+        when(traineeDAO.find("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> traineeService.updateTrainee(auth, "missing", TraineeRequestDTO.builder().build()));
+    }
+
+    @Test
+    void createTrainee_nullDateOfBirth_setsNullInResponse() {
+        var request = TraineeCreateRequestDTO.builder()
+                .firstName("John")
+                .lastName("Smith")
+                .isActive(true)
+                .build();
+
+        when(generator.generateUsername("John", "Smith")).thenReturn("john.smith");
+        when(generator.generatePassword()).thenReturn("pwd1234567");
+        doAnswer(invocation -> null).when(traineeDAO).save(any(Trainee.class));
+
+        var response = traineeService.createTrainee(request);
+
+        assertNull(response.getDateOfBirth());
     }
 
     @Test
@@ -125,6 +198,14 @@ class TraineeServiceImplTest {
         when(traineeDAO.find("john.smith")).thenReturn(Optional.of(trainee));
 
         assertSame(trainee, traineeService.getTrainee(auth, "john.smith"));
+    }
+
+    @Test
+    void getTrainee_notFound_throws() {
+        var auth = LoginRequestDTO.builder().username("missing").password("pwd").build();
+        when(traineeDAO.find("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> traineeService.getTrainee(auth, "missing"));
     }
 
     @Test

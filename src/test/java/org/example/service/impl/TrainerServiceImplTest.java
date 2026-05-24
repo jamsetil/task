@@ -103,11 +103,21 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void updateTrainer_updatesExistingEntity() {
+    void updateTrainer_updatesAllFields() {
         var auth = LoginRequestDTO.builder().username("trainer").password("pwd").build();
-        var user = User.builder().userName("trainer").firstName("Old").lastName("Name").build();
+        var user = User.builder()
+                .userName("trainer")
+                .firstName("Old")
+                .lastName("Name")
+                .isActive(true)
+                .build();
         var trainer = Trainer.builder().user(user).build();
-        var request = TrainerRequestDTO.builder().firstName("New").build();
+        var request = TrainerRequestDTO.builder()
+                .firstName("New")
+                .lastName("Trainer")
+                .username("new.trainer")
+                .isActive(false)
+                .build();
 
         when(trainerDAO.find("trainer")).thenReturn(Optional.of(trainer));
         when(trainerDAO.update("trainer", trainer)).thenReturn(trainer);
@@ -115,7 +125,46 @@ class TrainerServiceImplTest {
         trainerService.updateTrainer(auth, "trainer", request);
 
         assertEquals("New", trainer.getUser().getFirstName());
+        assertEquals("Trainer", trainer.getUser().getLastName());
+        assertEquals("new.trainer", trainer.getUser().getUserName());
+        assertFalse(trainer.getUser().getIsActive());
         verify(trainerDAO).update("trainer", trainer);
+    }
+
+    @Test
+    void updateTrainer_emptyRequest_doesNotChangeFields() {
+        var auth = LoginRequestDTO.builder().username("trainer").password("pwd").build();
+        var user = User.builder()
+                .userName("trainer")
+                .firstName("Old")
+                .lastName("Name")
+                .isActive(true)
+                .build();
+        var trainer = Trainer.builder().user(user).build();
+
+        when(trainerDAO.find("trainer")).thenReturn(Optional.of(trainer));
+        when(trainerDAO.update("trainer", trainer)).thenReturn(trainer);
+
+        trainerService.updateTrainer(auth, "trainer", TrainerRequestDTO.builder().build());
+
+        assertEquals("Old", trainer.getUser().getFirstName());
+        assertTrue(trainer.getUser().getIsActive());
+        verify(trainerDAO).update("trainer", trainer);
+    }
+
+    @Test
+    void updateTrainer_notFound_throws() {
+        var auth = LoginRequestDTO.builder().username("missing").password("pwd").build();
+        when(trainerDAO.find("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> trainerService.updateTrainer(auth, "missing", TrainerRequestDTO.builder().build()));
+    }
+
+    @Test
+    void matchCredentials_delegatesToDao() {
+        when(trainerDAO.matchTrainer("trainer", "pwd")).thenReturn(true);
+        assertTrue(trainerService.matchCredentials("trainer", "pwd"));
     }
 
     @Test
