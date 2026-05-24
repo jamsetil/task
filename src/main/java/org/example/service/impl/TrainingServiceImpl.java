@@ -97,6 +97,9 @@ public class TrainingServiceImpl implements TrainingService {
             TrainingCriteria criteria
     ) {
         authValidator.requireTrainee(auth, traineeUsername);
+        if (criteria != null) {
+            requestValidator.validate(criteria);
+        }
         log.debug("Fetching trainings for trainee username={}", traineeUsername);
         return trainingDAO.findTrainingsByTraineeUsername(traineeUsername, criteria);
     }
@@ -108,6 +111,9 @@ public class TrainingServiceImpl implements TrainingService {
             TrainingCriteria criteria
     ) {
         authValidator.requireTrainer(auth, trainerUsername);
+        if (criteria != null) {
+            requestValidator.validate(criteria);
+        }
         log.debug("Fetching trainings for trainer username={}", trainerUsername);
         return trainingDAO.findTrainingsByTrainerUsername(trainerUsername, criteria);
     }

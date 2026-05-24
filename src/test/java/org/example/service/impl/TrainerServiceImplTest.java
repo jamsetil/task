@@ -124,7 +124,7 @@ class TrainerServiceImplTest {
 
         trainerService.updateTrainer(auth, "trainer", request);
 
-        verify(requestValidator).validateUpdate(request);
+        verify(requestValidator).validate(request);
         assertEquals("New", trainer.getUser().getFirstName());
         assertEquals("Trainer", trainer.getUser().getLastName());
         assertEquals("new.trainer", trainer.getUser().getUserName());
@@ -158,7 +158,7 @@ class TrainerServiceImplTest {
         var auth = LoginRequestDTO.builder().username("trainer").password("pwd").build();
         var request = TrainerRequestDTO.builder().lastName("").build();
         doThrow(new IllegalArgumentException("Validation failed"))
-                .when(requestValidator).validateUpdate(request);
+                .when(requestValidator).validate(request);
 
         assertThrows(IllegalArgumentException.class,
                 () -> trainerService.updateTrainer(auth, "trainer", request));

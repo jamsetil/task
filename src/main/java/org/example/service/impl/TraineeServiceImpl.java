@@ -5,6 +5,7 @@ import org.example.dao.TraineeDAO;
 import org.example.dao.TrainerDAO;
 import org.example.dto.request.LoginRequestDTO;
 import org.example.dto.request.TraineeRequestDTO;
+import org.example.dto.request.TraineeTrainersUpdateRequestDTO;
 import org.example.dto.request.create.TraineeCreateRequestDTO;
 import org.example.dto.response.TraineeResponseDTO;
 import org.example.exception.ResourceNotFoundException;
@@ -79,7 +80,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     @Transactional
     public void updateTrainee(LoginRequestDTO auth, String username, TraineeRequestDTO requestDTO) {
-        requestValidator.validateTraineeUpdate(requestDTO);
+        requestValidator.validate(requestDTO);
         authValidator.requireTrainee(auth, username);
         log.info("Updating trainee with username={}", username);
 
@@ -130,6 +131,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     public boolean matchTrainee(String username, String password) {
+        requestValidator.validate(LoginRequestDTO.builder().username(username).password(password).build());
         return traineeDao.matchTrainee(username, password);
     }
 
@@ -157,7 +159,9 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     @Transactional
     public void updateTraineeTrainers(LoginRequestDTO auth, String username, List<String> trainerUsernames) {
-        requestValidator.validateTrainerUsernames(trainerUsernames);
+        requestValidator.validate(TraineeTrainersUpdateRequestDTO.builder()
+                .trainerUsernames(trainerUsernames)
+                .build());
         authValidator.requireTrainee(auth, username);
         log.info("Updating trainer list for trainee username={}", username);
         traineeDao.updateTraineeTrainers(username, trainerUsernames);

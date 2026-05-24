@@ -78,7 +78,7 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     @Transactional
     public void updateTrainer(LoginRequestDTO auth, String username, TrainerRequestDTO requestDTO) {
-        requestValidator.validateUpdate(requestDTO);
+        requestValidator.validate(requestDTO);
         authValidator.requireTrainer(auth, username);
         log.info("Updating trainer with username={}", username);
 
@@ -122,6 +122,7 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public boolean matchCredentials(String username, String password) {
+        requestValidator.validate(LoginRequestDTO.builder().username(username).password(password).build());
         return trainerDAO.matchTrainer(username, password);
     }
 

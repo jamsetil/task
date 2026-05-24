@@ -1,10 +1,16 @@
 package org.example.validation;
 
 import jakarta.validation.constraints.NotBlank;
+import org.example.dto.TrainingCriteria;
+import org.example.dto.request.LoginRequestDTO;
 import org.example.dto.request.TraineeRequestDTO;
+import org.example.dto.request.TraineeTrainersUpdateRequestDTO;
 import org.example.dto.request.TrainerRequestDTO;
+import org.example.dto.request.TrainingRequestDTO;
+import org.example.dto.request.create.TraineeCreateRequestDTO;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -32,35 +38,87 @@ class RequestValidatorTest {
     }
 
     @Test
+    void validate_nullRequest_throws() {
+        assertThrows(IllegalArgumentException.class, () -> validator.validate(null));
+    }
+
+    @Test
     void validateUpdate_blankFirstName_throws() {
         var request = TrainerRequestDTO.builder().firstName("   ").build();
-        assertThrows(IllegalArgumentException.class, () -> validator.validateUpdate(request));
+        assertThrows(IllegalArgumentException.class, () -> validator.validate(request));
     }
 
     @Test
     void validateUpdate_nullFields_passes() {
-        assertDoesNotThrow(() -> validator.validateUpdate(TrainerRequestDTO.builder().build()));
+        assertDoesNotThrow(() -> validator.validate(TrainerRequestDTO.builder().build()));
     }
 
     @Test
     void validateTraineeUpdate_blankAddress_throws() {
         var request = TraineeRequestDTO.builder().address("").build();
-        assertThrows(IllegalArgumentException.class, () -> validator.validateTraineeUpdate(request));
+        assertThrows(IllegalArgumentException.class, () -> validator.validate(request));
+    }
+
+    @Test
+    void validateTraineeUpdate_futureDateOfBirth_throws() {
+        var request = TraineeRequestDTO.builder().dateOfBirth(LocalDate.now().plusDays(1)).build();
+        assertThrows(IllegalArgumentException.class, () -> validator.validate(request));
+    }
+
+    @Test
+    void validateLogin_blankUsername_throws() {
+        var request = LoginRequestDTO.builder().username(" ").password("pwd").build();
+        assertThrows(IllegalArgumentException.class, () -> validator.validate(request));
     }
 
     @Test
     void validateTrainerUsernames_nullList_throws() {
-        assertThrows(IllegalArgumentException.class, () -> validator.validateTrainerUsernames(null));
+        assertThrows(IllegalArgumentException.class,
+                () -> validator.validate(TraineeTrainersUpdateRequestDTO.builder().trainerUsernames(null).build()));
     }
 
     @Test
     void validateTrainerUsernames_blankEntry_throws() {
         assertThrows(IllegalArgumentException.class,
-                () -> validator.validateTrainerUsernames(List.of("trainer1", "  ")));
+                () -> validator.validate(TraineeTrainersUpdateRequestDTO.builder()
+                        .trainerUsernames(List.of("trainer1", "  "))
+                        .build()));
     }
 
     @Test
     void validateTrainerUsernames_validList_passes() {
-        assertDoesNotThrow(() -> validator.validateTrainerUsernames(List.of("trainer1", "trainer2")));
+        assertDoesNotThrow(() -> validator.validate(TraineeTrainersUpdateRequestDTO.builder()
+                .trainerUsernames(List.of("trainer1", "trainer2"))
+                .build()));
+    }
+
+    @Test
+    void validateTraining_futureDate_throws() {
+        var request = TrainingRequestDTO.builder()
+                .traineeUsername("john")
+                .trainerUsername("trainer")
+                .trainingName("Cardio")
+                .trainingTypeName("Cardio")
+                .trainingDate(LocalDate.now().plusDays(1))
+                .trainingDuration(30)
+                .build();
+        assertThrows(IllegalArgumentException.class, () -> validator.validate(request));
+    }
+
+    @Test
+    void validateTrainingCriteria_blankTrainerName_throws() {
+        var criteria = TrainingCriteria.builder().trainerName("  ").build();
+        assertThrows(IllegalArgumentException.class, () -> validator.validate(criteria));
+    }
+
+    @Test
+    void validateTraineeCreate_futureDateOfBirth_throws() {
+        var request = TraineeCreateRequestDTO.builder()
+                .firstName("John")
+                .lastName("Smith")
+                .isActive(true)
+                .dateOfBirth(LocalDate.now().plusDays(1))
+                .build();
+        assertThrows(IllegalArgumentException.class, () -> validator.validate(request));
     }
 }

@@ -1,11 +1,13 @@
 package org.example.dto.request;
 
+import jakarta.validation.constraints.Past;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 import org.example.dto.request.base.BaseUpdateRequestDTO;
+import org.example.validation.NotBlankIfPresent;
 
 import java.time.LocalDate;
 
@@ -13,8 +15,9 @@ import java.time.LocalDate;
 @Setter
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TraineeRequestDTO extends BaseUpdateRequestDTO{
+public class TraineeRequestDTO extends BaseUpdateRequestDTO {
+    @Past
     LocalDate dateOfBirth;
+    @NotBlankIfPresent
     String address;
-
 }

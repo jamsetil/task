@@ -4,9 +4,10 @@ import org.example.dao.TraineeDAO;
 import org.example.dao.TrainerDAO;
 import org.example.dto.request.LoginRequestDTO;
 import org.example.exception.AuthenticationException;
+import org.example.validation.RequestValidator;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -22,8 +23,12 @@ class AuthValidatorTest {
     @Mock
     private TrainerDAO trainerDAO;
 
-    @InjectMocks
     private AuthValidator authValidator;
+
+    @BeforeEach
+    void setUp() {
+        authValidator = new AuthValidator(traineeDAO, trainerDAO, new RequestValidator());
+    }
 
     @Test
     void requireTrainee_validCredentials_passes() {
