@@ -3,39 +3,49 @@ package org.example.controller;
 import org.example.dto.request.TrainingRequestDTO;
 import org.example.service.TrainingService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(TrainingController.class)
 class TrainingControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
     private TrainingService trainingService;
 
-    @InjectMocks
-    private TrainingController trainingController;
-
     @Test
-    void createTraining_returnsOk() {
+    void createTraining_returnsOk() throws Exception {
         var request = TrainingRequestDTO.builder()
-                .traineeUsername("john.smith")
+                .traineeUsername("faiq.azizzade")
                 .trainerUsername("ilyas.azizzade")
                 .trainingName("Cardio")
-                .trainingDate(LocalDate.now())
+                .trainingDate(LocalDate.of(2024, 6, 1))
                 .trainingDuration(45)
                 .build();
 
-        var response = trainingController.createTraining(request, "pwd");
+        mockMvc.perform(post("/trainings")
+                        .param("password", "pwd")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
 
-        verify(trainingService).createTraining(request, "pwd");
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(trainingService).createTraining(any(TrainingRequestDTO.class), eq("pwd"));
     }
 }

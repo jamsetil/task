@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://dev-db:5432/gymcrm_dev
+    username: ${GYMCRM_DB_USERNAME:gymcrm_dev}
+    password: ${GYMCRM_DB_PASSWORD:devpassword}
+    driver-class-name: org.postgresql.Driver
+
+logging:
+  level:
+    org.example: INFO

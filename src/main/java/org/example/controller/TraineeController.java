@@ -1,8 +1,8 @@
 package org.example.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.request.TraineeRequestDTO;
@@ -20,79 +20,79 @@ import java.util.List;
 @RestController
 @RequestMapping("/trainees")
 @RequiredArgsConstructor
-@Api(value = "trainees", tags = "trainees")
+@Tag(name = "trainees", description = "trainee profile operations")
 public class TraineeController {
     private final TraineeService traineeService;
 
     @PostMapping
-    @ApiOperation(value = "register trainee", notes = "create trainee profile")
+    @Operation(summary = "register trainee", description = "create trainee profile")
     public ResponseEntity<TraineeResponseDTO> createTrainee(
             @RequestBody @Valid TraineeCreateRequestDTO requestDTO) {
         return ResponseEntity.ok(traineeService.createTrainee(requestDTO));
     }
 
     @GetMapping("/{username}")
-    @ApiOperation(value = "get trainee profile", notes = "returns trainee by username")
+    @Operation(summary = "get trainee profile", description = "returns trainee by username")
     public ResponseEntity<TraineeResponseDTO> getTraineeByUserName(
-            @ApiParam(value = "username", required = true) @PathVariable(name = "username") String username,
-            @ApiParam(value = "password", required = true) @RequestParam(name = "password") String password) {
+            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
+            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password) {
         return ResponseEntity.ok(traineeService.getTrainee(username, password));
     }
 
     @PutMapping("/{username}")
-    @ApiOperation(value = "update trainee profile", notes = "updates trainee fields")
+    @Operation(summary = "update trainee profile", description = "updates trainee fields")
     public ResponseEntity<TraineeResponseDTO> updateTrainee(
             @RequestBody @Valid TraineeRequestDTO requestDTO,
-            @ApiParam(value = "username", required = true) @PathVariable(name = "username") String username,
-            @ApiParam(value = "password", required = true) @RequestParam(name = "password") String password) {
+            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
+            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password) {
         return ResponseEntity.ok(traineeService.updateTrainee(requestDTO, username, password));
     }
 
     @PatchMapping("/{username}/status")
-    @ApiOperation(value = "update trainee status", notes = "activate or deactivate trainee")
+    @Operation(summary = "update trainee status", description = "activate or deactivate trainee")
     public ResponseEntity<Void> toggleTraineeStatus(
-            @ApiParam(value = "username", required = true) @PathVariable(name = "username") String username,
-            @ApiParam(value = "is active", required = true) @RequestParam(name = "isActive") boolean isActive,
-            @ApiParam(value = "password", required = true) @RequestParam(name = "password") String password) {
+            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
+            @Parameter(description = "is active", required = true) @RequestParam(name = "isActive") boolean isActive,
+            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password) {
         traineeService.changeStatus(username, isActive, password);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{username}")
-    @ApiOperation(value = "delete trainee profile", notes = "hard delete trainee and trainings")
+    @Operation(summary = "delete trainee profile", description = "hard delete trainee and trainings")
     public ResponseEntity<Void> deleteTrainee(
-            @ApiParam(value = "username", required = true) @PathVariable(name = "username") String username,
-            @ApiParam(value = "password", required = true) @RequestParam(name = "password") String password) {
+            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
+            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password) {
         traineeService.deleteTrainee(username, password);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{username}/trainers")
-    @ApiOperation(value = "update trainer list", notes = "assign trainers to trainee")
+    @Operation(summary = "update trainer list", description = "assign trainers to trainee")
     public ResponseEntity<TraineeResponseDTO> updateTraineeTrainers(
-            @ApiParam(value = "username", required = true) @PathVariable(name = "username") String username,
+            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
             @RequestBody @Valid TraineeTrainersUpdateRequestDTO requestDTO,
-            @ApiParam(value = "password", required = true) @RequestParam(name = "password") String password) {
+            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password) {
         return ResponseEntity.ok(traineeService.updateTraineeTrainers(username, requestDTO.getTrainerUsernames(), password));
     }
 
     @GetMapping("/{username}/available-trainers")
-    @ApiOperation(value = "get available trainers", notes = "active trainers not assigned to trainee")
+    @Operation(summary = "get available trainers", description = "active trainers not assigned to trainee")
     public ResponseEntity<List<TrainerResponseDTO>> getUnassignedTrainers(
-            @ApiParam(value = "username", required = true) @PathVariable(name = "username") String username,
-            @ApiParam(value = "password", required = true) @RequestParam(name = "password") String password) {
+            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
+            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password) {
         return ResponseEntity.ok(traineeService.getUnassignedTrainers(username, password));
     }
 
     @GetMapping("/{username}/trainings")
-    @ApiOperation(value = "get trainee trainings", notes = "list trainings with optional filters")
+    @Operation(summary = "get trainee trainings", description = "list trainings with optional filters")
     public ResponseEntity<TraineeResponseDTO> getTraineeTrainings(
-            @ApiParam(value = "username", required = true) @PathVariable(name = "username") String username,
-            @ApiParam(value = "password", required = true) @RequestParam(name = "password") String password,
-            @ApiParam(value = "from date") @RequestParam(name = "fromDate", required = false) LocalDate fromDate,
-            @ApiParam(value = "to date") @RequestParam(name = "toDate", required = false) LocalDate toDate,
-            @ApiParam(value = "trainer name") @RequestParam(name = "trainerName", required = false) String trainerName,
-            @ApiParam(value = "training type") @RequestParam(name = "trainingType", required = false) String trainingType) {
+            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
+            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password,
+            @Parameter(description = "from date") @RequestParam(name = "fromDate", required = false) LocalDate fromDate,
+            @Parameter(description = "to date") @RequestParam(name = "toDate", required = false) LocalDate toDate,
+            @Parameter(description = "trainer name") @RequestParam(name = "trainerName", required = false) String trainerName,
+            @Parameter(description = "training type") @RequestParam(name = "trainingType", required = false) String trainingType) {
         return ResponseEntity.ok(traineeService.getTraineeTrainings(username, password,
                 fromDate, toDate, trainerName, trainingType));
     }

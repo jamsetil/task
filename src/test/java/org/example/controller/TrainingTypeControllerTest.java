@@ -3,35 +3,42 @@ package org.example.controller;
 import org.example.dto.response.TrainingTypeResponseDTO;
 import org.example.service.TrainingTypeService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(TrainingTypeController.class)
 class TrainingTypeControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private TrainingTypeService trainingTypeService;
 
-    @InjectMocks
-    private TrainingTypeController trainingTypeController;
-
     @Test
-    void getTrainingTypes_returnsList() {
-        when(trainingTypeService.getTrainingTypes()).thenReturn(List.of(
+    void getTrainingTypes_returnsList() throws Exception {
+        when(trainingTypeService.getTrainingTypes("john", "pwd")).thenReturn(List.of(
                 new TrainingTypeResponseDTO("1", "Yoga"),
                 new TrainingTypeResponseDTO("2", "Cardio")
         ));
 
-        var response = trainingTypeController.getTrainingTypes();
+        mockMvc.perform(get("/training-types")
+                        .param("username", "john")
+                        .param("password", "pwd"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].trainingType").value("Yoga"))
+                .andExpect(jsonPath("$[1].trainingTypeId").value("2"));
 
-        assertEquals(2, response.getBody().size());
-        assertEquals("Yoga", response.getBody().get(0).getTrainingType());
+        verify(trainingTypeService).getTrainingTypes("john", "pwd");
     }
 }

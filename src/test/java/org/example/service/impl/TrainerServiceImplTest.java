@@ -1,8 +1,5 @@
 package org.example.service.impl;
 
-import org.example.dao.TraineeDAO;
-import org.example.dao.TrainerDAO;
-import org.example.dao.TrainingTypeDAO;
 import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TrainerRequestDTO;
 import org.example.dto.request.create.TrainerCreateRequestDTO;
@@ -15,6 +12,10 @@ import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.TrainingType;
 import org.example.model.base.User;
+import org.example.monitoring.metrics.GymCrmMetrics;
+import org.example.repository.TraineeRepository;
+import org.example.repository.TrainerRepository;
+import org.example.repository.TrainingTypeRepository;
 import org.example.service.TrainingService;
 import org.example.util.AuthValidator;
 import org.example.util.CredentialGenerator;
@@ -40,11 +41,11 @@ import static org.mockito.Mockito.*;
 class TrainerServiceImplTest {
 
     @Mock
-    private TrainerDAO trainerDAO;
+    private TrainerRepository trainerRepository;
     @Mock
-    private TraineeDAO traineeDAO;
+    private TraineeRepository traineeRepository;
     @Mock
-    private TrainingTypeDAO trainingTypeDAO;
+    private TrainingTypeRepository trainingTypeRepository;
     @Mock
     private CredentialGenerator generator;
     @Mock
@@ -55,6 +56,8 @@ class TrainerServiceImplTest {
     private TrainerMapper trainerMapper;
     @Mock
     private RequestValidator requestValidator;
+    @Mock
+    private GymCrmMetrics gymCrmMetrics;
 
     @InjectMocks
     private TrainerServiceImpl trainerService;
@@ -76,14 +79,16 @@ class TrainerServiceImplTest {
 
         when(generator.generateUsername("Ilyas", "Azizzade")).thenReturn("ilyas.azizzade");
         when(generator.generatePassword()).thenReturn("secret1234");
-        when(trainingTypeDAO.findByName("Body Building"))
+        when(traineeRepository.findByUsername("ilyas.azizzade")).thenReturn(Optional.empty());
+        when(trainingTypeRepository.findByTrainingTypeName("Body Building"))
                 .thenReturn(Optional.of(TrainingType.builder().trainingTypeName("Body Building").build()));
-        when(trainerDAO.save(any(Trainer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(trainerRepository.save(any(Trainer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = trainerService.createTrainer(request);
 
         assertEquals("ilyas.azizzade", response.getUserName());
         verify(requestValidator).validate(request);
+        verify(gymCrmMetrics).recordTrainerProfileCreated();
     }
 
     @Test
@@ -96,18 +101,18 @@ class TrainerServiceImplTest {
 
         when(generator.generateUsername(any(), any())).thenReturn("ilyas.azizzade");
         when(generator.generatePassword()).thenReturn("secret1234");
-        when(trainingTypeDAO.findByName("Unknown")).thenReturn(Optional.empty());
+        when(traineeRepository.findByUsername("ilyas.azizzade")).thenReturn(Optional.empty());
+        when(trainingTypeRepository.findByTrainingTypeName("Unknown")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> trainerService.createTrainer(request));
     }
-
 
     @Test
     void getTrainer_returnsMappedProfile() {
         var trainer = trainer("ilyas.azizzade", "Ilyas", "Azizzade", true);
         var dto = TrainerResponseDTO.builder().userName("ilyas.azizzade").firstName("Ilyas").build();
 
-        when(trainerDAO.find("ilyas.azizzade")).thenReturn(Optional.of(trainer));
+        when(trainerRepository.findByUsername("ilyas.azizzade")).thenReturn(Optional.of(trainer));
         when(trainerMapper.toResponseDTO(trainer)).thenReturn(dto);
 
         var response = trainerService.getTrainer("ilyas.azizzade", "pwd");
@@ -126,7 +131,7 @@ class TrainerServiceImplTest {
                 .build();
         var dto = TrainerResponseDTO.builder().userName("ilyas.azizzade").lastName("Updated").build();
 
-        when(trainerDAO.find("ilyas.azizzade")).thenReturn(Optional.of(trainer));
+        when(trainerRepository.findByUsername("ilyas.azizzade")).thenReturn(Optional.of(trainer));
         when(trainerMapper.toResponseDTO(trainer)).thenReturn(dto);
 
         var response = trainerService.updateTrainer(request, "ilyas.azizzade", "pwd");
@@ -136,9 +141,10 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void toggleTrainerStatus_delegatesToDao() {
+    void toggleTrainerStatus_updatesAndSaves() {
         var trainer = trainer("ilyas.azizzade", "Ilyas", "Azizzade", false);
-        when(trainerDAO.toggleStatus("ilyas.azizzade", false)).thenReturn(trainer);
+        when(trainerRepository.findByUsername("ilyas.azizzade")).thenReturn(Optional.of(trainer));
+        when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         var result = trainerService.toggleTrainerStatus("ilyas.azizzade", false, "pwd");
 
@@ -175,7 +181,7 @@ class TrainerServiceImplTest {
 
     @Test
     void updateTrainer_notFound_throws() {
-        when(trainerDAO.find("missing")).thenReturn(Optional.empty());
+        when(trainerRepository.findByUsername("missing")).thenReturn(Optional.empty());
         var request = TrainerRequestDTO.builder()
                 .firstName("Ilyas")
                 .lastName("Azizzade")

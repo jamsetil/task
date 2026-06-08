@@ -1,16 +1,16 @@
 package org.example.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.dao.TraineeDAO;
-import org.example.dao.TrainerDAO;
-import org.example.dao.TrainingDAO;
-import org.example.dao.TrainingTypeDAO;
 import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TrainingRequestDTO;
 import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
+import org.example.monitoring.metrics.GymCrmMetrics;
+import org.example.repository.TraineeRepository;
+import org.example.repository.TrainerRepository;
+import org.example.repository.TrainingRepository;
 import org.example.service.TrainingService;
 import org.example.util.AuthValidator;
 import org.example.validation.RequestValidator;
@@ -25,15 +25,17 @@ import java.util.List;
 public class TrainingServiceImpl implements TrainingService {
 
     @Autowired
-    private TrainingDAO trainingDAO;
+    private TrainingRepository trainingRepository;
     @Autowired
-    private TraineeDAO traineeDAO;
+    private TraineeRepository traineeRepository;
     @Autowired
-    private TrainerDAO trainerDAO;
+    private TrainerRepository trainerRepository;
     @Autowired
     private AuthValidator authValidator;
     @Autowired
     private RequestValidator requestValidator;
+    @Autowired
+    private GymCrmMetrics gymCrmMetrics;
 
     @Override
     @Transactional
@@ -41,11 +43,11 @@ public class TrainingServiceImpl implements TrainingService {
         requestValidator.validate(requestDTO);
         authValidator.requireAuthentication(requestDTO.getTraineeUsername(), password);
 
-        Trainee trainee = traineeDAO.find(requestDTO.getTraineeUsername())
+        Trainee trainee = traineeRepository.findByUsername(requestDTO.getTraineeUsername())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Trainee not found: " + requestDTO.getTraineeUsername()));
 
-        Trainer trainer = trainerDAO.find(requestDTO.getTrainerUsername())
+        Trainer trainer = trainerRepository.findByUsername(requestDTO.getTrainerUsername())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Trainer not found: " + requestDTO.getTrainerUsername()));
 
@@ -73,7 +75,8 @@ public class TrainingServiceImpl implements TrainingService {
                 .trainingType(trainer.getSpecialization())
                 .build();
 
-        training = trainingDAO.save(training);
+        training = trainingRepository.save(training);
+        gymCrmMetrics.recordTrainingCreated();
         log.info("Training created successfully with trainingId={}", training.getTrainingId());
         return training;
     }
@@ -86,7 +89,7 @@ public class TrainingServiceImpl implements TrainingService {
             requestValidator.validate(criteria);
         }
         log.debug("Fetching trainings for trainee username={}", traineeUsername);
-        return trainingDAO.findTrainingsByTraineeUsername(traineeUsername, criteria);
+        return trainingRepository.findByTraineeUsername(traineeUsername, criteria);
     }
 
     @Override
@@ -97,6 +100,6 @@ public class TrainingServiceImpl implements TrainingService {
             requestValidator.validate(criteria);
         }
         log.debug("Fetching trainings for trainer username={}", trainerUsername);
-        return trainingDAO.findTrainingsByTrainerUsername(trainerUsername, criteria);
+        return trainingRepository.findByTrainerUsername(trainerUsername, criteria);
     }
 }

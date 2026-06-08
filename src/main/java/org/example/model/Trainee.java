@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import org.example.model.base.User;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -36,7 +37,7 @@ public class Trainee {
     User user;
 
     @OneToMany(mappedBy = "trainee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    List<Training> trainings;
+    List<Training> trainings = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

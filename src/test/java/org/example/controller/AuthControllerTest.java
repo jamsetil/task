@@ -3,43 +3,53 @@ package org.example.controller;
 import org.example.dto.request.ChangeLoginRequestDTO;
 import org.example.service.UserService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(AuthController.class)
 class AuthControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
     private UserService userService;
 
-    @InjectMocks
-    private AuthController authController;
-
     @Test
-    void login_returnsOk() {
-        var response = authController.login("john", "pwd");
+    void login_returnsOk() throws Exception {
+        mockMvc.perform(get("/auth/login")
+                        .param("username", "john")
+                        .param("password", "pwd"))
+                .andExpect(status().isOk());
 
         verify(userService).authenticate("john", "pwd");
-        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
-    void changeLogin_returnsOk() {
+    void changeLogin_returnsOk() throws Exception {
         var request = ChangeLoginRequestDTO.builder()
                 .username("john")
                 .oldPassword("old")
                 .newPassword("new")
                 .build();
 
-        var response = authController.changeLogin(request);
+        mockMvc.perform(put("/auth/change-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
 
         verify(userService).changePassword("john", "old", "new");
-        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }

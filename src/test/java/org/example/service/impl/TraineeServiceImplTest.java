@@ -1,7 +1,5 @@
 package org.example.service.impl;
 
-import org.example.dao.TraineeDAO;
-import org.example.dao.TrainerDAO;
 import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.create.TraineeCreateRequestDTO;
@@ -15,6 +13,9 @@ import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.TrainingType;
 import org.example.model.base.User;
+import org.example.monitoring.metrics.GymCrmMetrics;
+import org.example.repository.TraineeRepository;
+import org.example.repository.TrainerRepository;
 import org.example.service.TrainingService;
 import org.example.util.AuthValidator;
 import org.example.util.CredentialGenerator;
@@ -28,7 +29,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,9 +42,9 @@ import static org.mockito.Mockito.*;
 class TraineeServiceImplTest {
 
     @Mock
-    private TraineeDAO traineeDAO;
+    private TraineeRepository traineeRepository;
     @Mock
-    private TrainerDAO trainerDAO;
+    private TrainerRepository trainerRepository;
     @Mock
     private CredentialGenerator generator;
     @Mock
@@ -50,6 +53,8 @@ class TraineeServiceImplTest {
     private RequestValidator requestValidator;
     @Mock
     private TrainingService trainingService;
+    @Mock
+    private GymCrmMetrics gymCrmMetrics;
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
@@ -83,17 +88,17 @@ class TraineeServiceImplTest {
 
         when(generator.generateUsername("John", "Smith")).thenReturn("john.smith");
         when(generator.generatePassword()).thenReturn("pwd1234567");
-        doAnswer(invocation -> null).when(traineeDAO).save(any(Trainee.class));
+        when(trainerRepository.findByUsername("john.smith")).thenReturn(Optional.empty());
+        when(traineeRepository.save(any(Trainee.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = traineeService.createTrainee(request);
 
         assertEquals("john.smith", response.getUserName());
         assertEquals("pwd1234567", response.getPassword());
         verify(requestValidator).validate(request);
-        verify(traineeDAO).save(any(Trainee.class));
+        verify(traineeRepository).save(any(Trainee.class));
+        verify(gymCrmMetrics).recordTraineeProfileCreated();
     }
-
-
 
     @Test
     void getTrainee_returnsProfile() {
@@ -101,7 +106,7 @@ class TraineeServiceImplTest {
         var trainee = trainee("john.smith", "John", "Smith", true,
                 LocalDate.of(1995, 5, 20), "Street 1", List.of(trainer));
 
-        when(traineeDAO.find("john.smith")).thenReturn(java.util.Optional.of(trainee));
+        when(traineeRepository.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
 
         var response = traineeService.getTrainee("john.smith", "pwd");
 
@@ -111,7 +116,7 @@ class TraineeServiceImplTest {
 
     @Test
     void getTrainee_notFound_throws() {
-        when(traineeDAO.find("missing")).thenReturn(java.util.Optional.empty());
+        when(traineeRepository.findByUsername("missing")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> traineeService.getTrainee("missing", "pwd"));
     }
@@ -122,7 +127,7 @@ class TraineeServiceImplTest {
                 .when(authValidator).requireAuthentication("john.smith", "bad");
 
         assertThrows(AuthenticationException.class, () -> traineeService.getTrainee("john.smith", "bad"));
-        verify(traineeDAO, never()).find(any());
+        verify(traineeRepository, never()).findByUsername(any());
     }
 
     @Test
@@ -135,8 +140,8 @@ class TraineeServiceImplTest {
                 .isActive(false)
                 .build();
 
-        when(traineeDAO.find("john.smith")).thenReturn(java.util.Optional.of(trainee));
-        when(traineeDAO.update(trainee)).thenReturn(trainee);
+        when(traineeRepository.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
+        when(traineeRepository.save(trainee)).thenReturn(trainee);
 
         var response = traineeService.updateTrainee(request, "john.smith", "pwd");
 
@@ -145,18 +150,23 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    void deleteTrainee_delegatesToDao() {
+    void deleteTrainee_deletesEntity() {
+        var trainee = trainee("john.smith", "John", "Smith", true,
+                LocalDate.of(1995, 5, 20), "Street 1", List.of());
+        when(traineeRepository.findByUsernameForDelete("john.smith")).thenReturn(Optional.of(trainee));
+
         traineeService.deleteTrainee("john.smith", "pwd");
 
         verify(authValidator).requireAuthentication("john.smith", "pwd");
-        verify(traineeDAO).delete("john.smith");
+        verify(traineeRepository).delete(trainee);
     }
 
     @Test
-    void changeStatus_delegatesToDao() {
+    void changeStatus_updatesAndSaves() {
         var trainee = trainee("john.smith", "John", "Smith", false,
                 LocalDate.of(1995, 5, 20), "Street 1", List.of());
-        when(traineeDAO.toggleStatus("john.smith", false)).thenReturn(trainee);
+        when(traineeRepository.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
+        when(traineeRepository.save(trainee)).thenReturn(trainee);
 
         var result = traineeService.changeStatus("john.smith", false, "pwd");
 
@@ -170,7 +180,9 @@ class TraineeServiceImplTest {
         var trainee = trainee("john.smith", "John", "Smith", true,
                 LocalDate.of(1995, 5, 20), "Street 1", List.of(trainer));
 
-        when(traineeDAO.updateTraineeTrainers("john.smith", List.of("trainer1"))).thenReturn(trainee);
+        when(traineeRepository.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
+        when(trainerRepository.findByUserUserNameIn(List.of("trainer1"))).thenReturn(List.of(trainer));
+        when(traineeRepository.save(trainee)).thenReturn(trainee);
 
         var response = traineeService.updateTraineeTrainers("john.smith", List.of("trainer1"), "pwd");
 
@@ -181,7 +193,7 @@ class TraineeServiceImplTest {
     @Test
     void getUnassignedTrainers_mapsActiveTrainers() {
         var trainer = trainer("trainer1", "Ann", "Lee", 3L);
-        when(trainerDAO.findTrainersNotAssignedToTrainee("john.smith")).thenReturn(List.of(trainer));
+        when(trainerRepository.findActiveNotAssignedToTrainee("john.smith")).thenReturn(List.of(trainer));
 
         var result = traineeService.getUnassignedTrainers("john.smith", "pwd");
 
@@ -213,7 +225,7 @@ class TraineeServiceImplTest {
 
     @Test
     void updateTrainee_notFound_throws() {
-        when(traineeDAO.find("missing")).thenReturn(java.util.Optional.empty());
+        when(traineeRepository.findByUsername("missing")).thenReturn(Optional.empty());
         var request = TraineeRequestDTO.builder()
                 .firstName("John")
                 .lastName("Smith")
@@ -235,7 +247,7 @@ class TraineeServiceImplTest {
                         .lastName(lastName)
                         .isActive(isActive)
                         .build())
-                .trainers(trainers)
+                .trainers(trainers == null ? new ArrayList<>() : new ArrayList<>(trainers))
                 .build();
     }
 

@@ -7,119 +7,143 @@ import org.example.dto.response.TraineeResponseDTO;
 import org.example.dto.response.TrainerResponseDTO;
 import org.example.service.TraineeService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(TraineeController.class)
 class TraineeControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
     private TraineeService traineeService;
 
-    @InjectMocks
-    private TraineeController traineeController;
-
     @Test
-    void createTrainee_returnsCreatedProfile() {
+    void createTrainee_returnsCreatedProfile() throws Exception {
         var request = TraineeCreateRequestDTO.builder()
-                .firstName("John")
-                .lastName("Smith")
+                .firstName("Faiq")
+                .lastName("Azizzade")
                 .build();
-        var responseDto = TraineeResponseDTO.builder()
-                .userName("john.smith")
+        when(traineeService.createTrainee(any())).thenReturn(TraineeResponseDTO.builder()
+                .userName("faiq.azizzade")
                 .password("pwd1234567")
-                .build();
-        when(traineeService.createTrainee(request)).thenReturn(responseDto);
+                .build());
 
-        var response = traineeController.createTrainee(request);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("john.smith", response.getBody().getUserName());
+        mockMvc.perform(post("/trainees")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userName").value("faiq.azizzade"));
     }
 
     @Test
-    void getTraineeByUserName_returnsProfile() {
-        var dto = TraineeResponseDTO.builder().firstName("John").lastName("Smith").build();
-        when(traineeService.getTrainee("john.smith", "pwd")).thenReturn(dto);
+    void getTraineeByUserName_returnsProfile() throws Exception {
+        when(traineeService.getTrainee("faiq.azizzade", "pwd")).thenReturn(TraineeResponseDTO.builder()
+                .firstName("Faiq")
+                .lastName("Azizzade")
+                .build());
 
-        var response = traineeController.getTraineeByUserName("john.smith", "pwd");
-
-        assertEquals("John", response.getBody().getFirstName());
+        mockMvc.perform(get("/trainees/faiq.azizzade")
+                        .param("password", "pwd"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("Faiq"));
     }
 
     @Test
-    void updateTrainee_returnsUpdatedProfile() {
+    void updateTrainee_returnsUpdatedProfile() throws Exception {
         var request = TraineeRequestDTO.builder()
-                .firstName("John")
-                .lastName("Smith")
+                .firstName("Faiq")
+                .lastName("Azizzade")
                 .isActive(true)
                 .build();
-        var dto = TraineeResponseDTO.builder().userName("john.smith").firstName("John").build();
-        when(traineeService.updateTrainee(request, "john.smith", "pwd")).thenReturn(dto);
+        when(traineeService.updateTrainee(any(), eq("faiq.azizzade"), eq("pwd")))
+                .thenReturn(TraineeResponseDTO.builder().userName("faiq.azizzade").build());
 
-        var response = traineeController.updateTrainee(request, "john.smith", "pwd");
-
-        assertEquals("john.smith", response.getBody().getUserName());
+        mockMvc.perform(put("/trainees/faiq.azizzade")
+                        .param("password", "pwd")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userName").value("faiq.azizzade"));
     }
 
     @Test
-    void toggleTraineeStatus_returnsOk() {
-        var response = traineeController.toggleTraineeStatus("john.smith", true, "pwd");
+    void toggleTraineeStatus_returnsOk() throws Exception {
+        mockMvc.perform(patch("/trainees/faiq.azizzade/status")
+                        .param("password", "pwd")
+                        .param("isActive", "true"))
+                .andExpect(status().isOk());
 
-        verify(traineeService).changeStatus("john.smith", true, "pwd");
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(traineeService).changeStatus("faiq.azizzade", true, "pwd");
     }
 
     @Test
-    void deleteTrainee_returnsOk() {
-        var response = traineeController.deleteTrainee("john.smith", "pwd");
+    void deleteTrainee_returnsOk() throws Exception {
+        mockMvc.perform(delete("/trainees/faiq.azizzade")
+                        .param("password", "pwd"))
+                .andExpect(status().isOk());
 
-        verify(traineeService).deleteTrainee("john.smith", "pwd");
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(traineeService).deleteTrainee("faiq.azizzade", "pwd");
     }
 
     @Test
-    void updateTraineeTrainers_returnsUpdatedList() {
+    void updateTraineeTrainers_returnsUpdatedList() throws Exception {
         var request = TraineeTrainersUpdateRequestDTO.builder()
-                .trainerUsernames(List.of("trainer1"))
+                .trainerUsernames(List.of("ilyas.azizzade"))
                 .build();
-        var dto = TraineeResponseDTO.builder().userName("john.smith").build();
-        when(traineeService.updateTraineeTrainers("john.smith", List.of("trainer1"), "pwd")).thenReturn(dto);
+        when(traineeService.updateTraineeTrainers(eq("faiq.azizzade"), eq(List.of("ilyas.azizzade")), eq("pwd")))
+                .thenReturn(TraineeResponseDTO.builder().userName("faiq.azizzade").build());
 
-        var response = traineeController.updateTraineeTrainers("john.smith", request, "pwd");
-
-        assertEquals("john.smith", response.getBody().getUserName());
+        mockMvc.perform(put("/trainees/faiq.azizzade/trainers")
+                        .param("password", "pwd")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userName").value("faiq.azizzade"));
     }
 
     @Test
-    void getUnassignedTrainers_returnsList() {
-        when(traineeService.getUnassignedTrainers("john.smith", "pwd"))
-                .thenReturn(List.of(TrainerResponseDTO.builder().userName("trainer1").build()));
+    void getUnassignedTrainers_returnsList() throws Exception {
+        when(traineeService.getUnassignedTrainers("faiq.azizzade", "pwd"))
+                .thenReturn(List.of(TrainerResponseDTO.builder().userName("ilyas.azizzade").build()));
 
-        var response = traineeController.getUnassignedTrainers("john.smith", "pwd");
-
-        assertEquals(1, response.getBody().size());
+        mockMvc.perform(get("/trainees/faiq.azizzade/available-trainers")
+                        .param("password", "pwd"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].userName").value("ilyas.azizzade"));
     }
 
     @Test
-    void getTraineeTrainings_returnsTrainings() {
-        var dto = TraineeResponseDTO.builder().userName("john.smith").build();
-        when(traineeService.getTraineeTrainings("john.smith", "pwd",
-                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "Ann", "Fitness")).thenReturn(dto);
+    void getTraineeTrainings_returnsTrainings() throws Exception {
+        when(traineeService.getTraineeTrainings(eq("faiq.azizzade"), eq("pwd"),
+                any(), any(), any(), any()))
+                .thenReturn(TraineeResponseDTO.builder().userName("faiq.azizzade").build());
 
-        var response = traineeController.getTraineeTrainings("john.smith", "pwd",
-                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "Ann", "Fitness");
-
-        assertEquals("john.smith", response.getBody().getUserName());
+        mockMvc.perform(get("/trainees/faiq.azizzade/trainings")
+                        .param("password", "pwd")
+                        .param("fromDate", "2024-01-01")
+                        .param("toDate", "2024-12-31")
+                        .param("trainerName", "Ilyas")
+                        .param("trainingType", "Fitness"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userName").value("faiq.azizzade"));
     }
 }

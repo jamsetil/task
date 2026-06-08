@@ -3,89 +3,110 @@ package org.example.controller;
 import org.example.dto.request.TrainerRequestDTO;
 import org.example.dto.request.create.TrainerCreateRequestDTO;
 import org.example.dto.response.TrainerResponseDTO;
+import org.example.dto.response.TrainingResponseDTO;
 import org.example.service.TrainerService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.time.LocalDate;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(TrainerController.class)
 class TrainerControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
     private TrainerService trainerService;
 
-    @InjectMocks
-    private TrainerController trainerController;
-
     @Test
-    void createTrainer_returnsCreatedProfile() {
+    void createTrainer_returnsCreatedProfile() throws Exception {
         var request = TrainerCreateRequestDTO.builder()
                 .firstName("Ilyas")
                 .lastName("Azizzade")
-                .specializationName("Fitness")
+                .specializationName("Body Building")
                 .build();
-        var dto = TrainerResponseDTO.builder()
+        when(trainerService.createTrainer(any())).thenReturn(TrainerResponseDTO.builder()
                 .userName("ilyas.azizzade")
                 .password("secret1234")
-                .build();
-        when(trainerService.createTrainer(request)).thenReturn(dto);
+                .build());
 
-        var response = trainerController.createTrainer(request);
-
-        assertEquals("ilyas.azizzade", response.getBody().getUserName());
+        mockMvc.perform(post("/trainers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userName").value("ilyas.azizzade"));
     }
 
     @Test
-    void getTrainerByUserName_returnsProfile() {
-        var dto = TrainerResponseDTO.builder().userName("ilyas.azizzade").firstName("Ilyas").build();
-        when(trainerService.getTrainer("ilyas.azizzade", "pwd")).thenReturn(dto);
+    void getTrainerByUserName_returnsProfile() throws Exception {
+        when(trainerService.getTrainer("ilyas.azizzade", "pwd")).thenReturn(TrainerResponseDTO.builder()
+                .firstName("Ilyas")
+                .lastName("Azizzade")
+                .build());
 
-        var response = trainerController.getTrainerByUserName("ilyas.azizzade", "pwd");
-
-        assertEquals("Ilyas", response.getBody().getFirstName());
+        mockMvc.perform(get("/trainers/ilyas.azizzade")
+                        .param("password", "pwd"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("Ilyas"));
     }
 
     @Test
-    void updateTrainer_returnsUpdatedProfile() {
+    void updateTrainer_returnsUpdatedProfile() throws Exception {
         var request = TrainerRequestDTO.builder()
                 .firstName("Ilyas")
                 .lastName("Azizzade")
                 .isActive(true)
                 .build();
-        var dto = TrainerResponseDTO.builder().userName("ilyas.azizzade").build();
-        when(trainerService.updateTrainer(request, "ilyas.azizzade", "pwd")).thenReturn(dto);
+        when(trainerService.updateTrainer(any(), eq("ilyas.azizzade"), eq("pwd")))
+                .thenReturn(TrainerResponseDTO.builder().lastName("Azizzade").build());
 
-        var response = trainerController.updateTrainer(request, "ilyas.azizzade", "pwd");
-
-        assertEquals("ilyas.azizzade", response.getBody().getUserName());
+        mockMvc.perform(put("/trainers/ilyas.azizzade")
+                        .param("password", "pwd")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lastName").value("Azizzade"));
     }
 
     @Test
-    void toggleTrainerStatus_returnsOk() {
-        var response = trainerController.toggleTrainerStatus("ilyas.azizzade", false, "pwd");
+    void toggleTrainerStatus_returnsOk() throws Exception {
+        mockMvc.perform(patch("/trainers/ilyas.azizzade/status")
+                        .param("password", "pwd")
+                        .param("isActive", "false"))
+                .andExpect(status().isOk());
 
         verify(trainerService).toggleTrainerStatus("ilyas.azizzade", false, "pwd");
-        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
-    void getTrainerTrainings_returnsTrainings() {
-        var dto = TrainerResponseDTO.builder().userName("ilyas.azizzade").build();
-        when(trainerService.getTrainerTrainings("ilyas.azizzade", "pwd",
-                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "John")).thenReturn(dto);
+    void getTrainerTrainings_returnsTrainings() throws Exception {
+        when(trainerService.getTrainerTrainings(eq("ilyas.azizzade"), eq("pwd"), any(), any(), any()))
+                .thenReturn(TrainerResponseDTO.builder()
+                        .trainingResponseDTOList(List.of(TrainingResponseDTO.builder()
+                                .trainingName("Cardio")
+                                .build()))
+                        .build());
 
-        var response = trainerController.getTrainerTrainings("ilyas.azizzade", "pwd",
-                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "John");
-
-        assertEquals("ilyas.azizzade", response.getBody().getUserName());
+        mockMvc.perform(get("/trainers/ilyas.azizzade/trainings")
+                        .param("password", "pwd")
+                        .param("traineeName", "Faiq Azizzade"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.trainingResponseDTOList[0].trainingName").value("Cardio"));
     }
 }

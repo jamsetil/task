@@ -2,8 +2,8 @@ package org.example.util;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.dao.UserDAO;
 import org.example.exception.AuthenticationException;
+import org.example.repository.UserRepository;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AuthValidator {
 
-    private final UserDAO userDAO;
+    private final UserRepository userRepository;
 
     public void requireAuthentication(String username, String password) {
         if (username == null || username.isBlank()) {
@@ -20,11 +20,8 @@ public class AuthValidator {
         if (password == null || password.isBlank()) {
             throw new AuthenticationException("Password is required");
         }
-        try {
-            userDAO.authenticate(username, password);
-        } catch (RuntimeException ex) {
-            throw new AuthenticationException("Invalid username or password");
-        }
+        userRepository.findByUserNameAndPassword(username, password)
+                .orElseThrow(() -> new AuthenticationException("Invalid username or password"));
         log.debug("Authenticated user username={}", username);
     }
 }

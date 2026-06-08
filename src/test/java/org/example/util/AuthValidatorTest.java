@@ -1,13 +1,15 @@
 package org.example.util;
 
-import org.example.dao.UserDAO;
-import org.example.model.base.User;
 import org.example.exception.AuthenticationException;
+import org.example.model.base.User;
+import org.example.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -17,14 +19,15 @@ import static org.mockito.Mockito.when;
 class AuthValidatorTest {
 
     @Mock
-    private UserDAO userDAO;
+    private UserRepository userRepository;
 
     @InjectMocks
     private AuthValidator authValidator;
 
     @Test
     void requireAuthentication_validCredentials_passes() {
-        when(userDAO.authenticate("john", "pwd")).thenReturn(User.builder().userName("john").build());
+        when(userRepository.findByUserNameAndPassword("john", "pwd"))
+                .thenReturn(Optional.of(User.builder().userName("john").build()));
         assertDoesNotThrow(() -> authValidator.requireAuthentication("john", "pwd"));
     }
 
@@ -40,8 +43,7 @@ class AuthValidatorTest {
 
     @Test
     void requireAuthentication_invalidCredentials_throws() {
-        when(userDAO.authenticate("john", "bad"))
-                .thenThrow(new RuntimeException("Invalid username or password"));
+        when(userRepository.findByUserNameAndPassword("john", "bad")).thenReturn(Optional.empty());
         assertThrows(AuthenticationException.class, () -> authValidator.requireAuthentication("john", "bad"));
     }
 }

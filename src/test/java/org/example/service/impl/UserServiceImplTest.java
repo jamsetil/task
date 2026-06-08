@@ -1,6 +1,7 @@
 package org.example.service.impl;
 
-import org.example.dao.UserDAO;
+import org.example.model.base.User;
+import org.example.repository.UserRepository;
 import org.example.util.AuthValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -8,13 +9,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
 
     @Mock
-    private UserDAO userDAO;
+    private UserRepository userRepository;
     @Mock
     private AuthValidator authValidator;
 
@@ -30,9 +34,12 @@ class UserServiceImplTest {
 
     @Test
     void changePassword_validatesOldPasswordAndUpdates() {
+        when(userRepository.findByUserName("john")).thenReturn(Optional.of(
+                User.builder().userName("john").password("old").build()));
+
         userService.changePassword("john", "old", "new");
 
         verify(authValidator).requireAuthentication("john", "old");
-        verify(userDAO).changePassword("john", "old", "new");
+        verify(userRepository).save(any(User.class));
     }
 }

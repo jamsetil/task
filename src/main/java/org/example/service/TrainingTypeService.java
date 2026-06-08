@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface TrainingTypeService {
 
-    List<TrainingTypeResponseDTO> getTrainingTypes();
+    List<TrainingTypeResponseDTO> getTrainingTypes(String username, String password);
 }

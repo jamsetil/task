@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://prod-db:5432/gymcrm_prod
+    username: ${GYMCRM_DB_USERNAME}
+    password: ${GYMCRM_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    org.example: WARN

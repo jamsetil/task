@@ -1,11 +1,12 @@
 package org.example.init;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.model.TrainingType;
+import org.example.repository.TrainingTypeRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,32 +23,16 @@ public class TrainingTypeInitializer {
             "Strength"
     );
 
-    private final EntityManagerFactory emf;
+    private final TrainingTypeRepository trainingTypeRepository;
 
     @PostConstruct
+    @Transactional
     public void init() {
-        var em = emf.createEntityManager();
-        try {
-            em.getTransaction().begin();
-            for (String typeName : DEFAULT_TYPES) {
-                var existing = em.createQuery(
-                                "SELECT tt FROM TrainingType tt WHERE tt.trainingTypeName = :name",
-                                TrainingType.class)
-                        .setParameter("name", typeName)
-                        .getResultList();
-                if (existing.isEmpty()) {
-                    em.persist(TrainingType.builder().trainingTypeName(typeName).build());
-                    log.info("Seeded training type: {}", typeName);
-                }
+        for (String typeName : DEFAULT_TYPES) {
+            if (trainingTypeRepository.findByTrainingTypeName(typeName).isEmpty()) {
+                trainingTypeRepository.save(TrainingType.builder().trainingTypeName(typeName).build());
+                log.info("Seeded training type: {}", typeName);
             }
-            em.getTransaction().commit();
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-            log.warn("Training type seed skipped: {}", e.getMessage());
-        } finally {
-            em.close();
         }
     }
 }
