@@ -13,8 +13,8 @@ import java.util.List;
 @Entity
 public class TrainingType {
     @Id
-    @GeneratedValue(strategy = jakarta.persistence.GenerationType.UUID)
-    private String trainingTypeId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long trainingTypeId;
     @Column(nullable = false)
     private String trainingTypeName;
     @OneToMany

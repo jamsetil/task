@@ -118,13 +118,13 @@ class TraineeDAOTest extends DaoTestSupport {
     }
 
     @Test
-    void toggleStatus_invertsActiveFlag() {
+    void toggleStatus_setsRequestedStatus() {
         var user = User.builder().isActive(true).build();
         var trainee = Trainee.builder().user(user).build();
         var query = mockNamedQuery(Trainee.class);
         when(query.getSingleResult()).thenReturn(trainee);
 
-        Trainee result = traineeDAO.toggleStatus("john");
+        Trainee result = traineeDAO.toggleStatus("john", false);
 
         assertSame(trainee, result);
         assertFalse(user.getIsActive());
@@ -133,50 +133,43 @@ class TraineeDAOTest extends DaoTestSupport {
     }
 
     @Test
-    void update_updatesExistingTraineeFields() {
-        var existingUser = User.builder()
-                .firstName("Old")
-                .lastName("Name")
-                .userName("old.user")
-                .isActive(true)
-                .build();
-        var existing = Trainee.builder()
-                .user(existingUser)
-                .address("old address")
-                .dateOfBirth(LocalDate.of(1990, 1, 1))
-                .build();
+    void toggleStatus_sameStatusStillUpdates() {
+        var user = User.builder().isActive(true).build();
+        var trainee = Trainee.builder().user(user).build();
+        var query = mockNamedQuery(Trainee.class);
+        when(query.getSingleResult()).thenReturn(trainee);
 
-        var updateUser = User.builder()
-                .firstName("New")
-                .lastName("User")
-                .userName("new.user")
-                .isActive(false)
-                .build();
-        var update = Trainee.builder()
-                .user(updateUser)
+        traineeDAO.toggleStatus("john", true);
+
+        assertTrue(user.getIsActive());
+        verify(em).merge(trainee);
+        verify(tx).commit();
+    }
+
+    @Test
+    void update_mergesTrainee() {
+        var trainee = Trainee.builder()
+                .user(User.builder().firstName("New").lastName("User").build())
                 .address("new address")
                 .dateOfBirth(LocalDate.of(1995, 5, 20))
                 .build();
 
-        var query = mockNamedQuery(Trainee.class);
-        when(query.getSingleResult()).thenReturn(existing);
+        when(em.merge(trainee)).thenReturn(trainee);
 
-        Trainee result = traineeDAO.update("john", update);
+        Trainee result = traineeDAO.update(trainee);
 
         assertEquals("New", result.getUser().getFirstName());
-        assertEquals("new address", result.getAddress());
         verify(tx).commit();
         verify(em).close();
     }
 
     @Test
     void update_onError_rollsBackAndThrows() {
-        var query = mockNamedQuery(Trainee.class);
-        when(query.getSingleResult()).thenThrow(new RuntimeException("not found"));
+        var trainee = Trainee.builder().user(User.builder().build()).build();
+        when(em.merge(trainee)).thenThrow(new RuntimeException("db error"));
         when(tx.isActive()).thenReturn(true);
 
-        assertThrows(RuntimeException.class,
-                () -> traineeDAO.update("john", Trainee.builder().user(User.builder().build()).build()));
+        assertThrows(RuntimeException.class, () -> traineeDAO.update(trainee));
 
         verify(tx).rollback();
     }
@@ -208,7 +201,7 @@ class TraineeDAOTest extends DaoTestSupport {
 
     @Test
     void delete_removesTrainee() {
-        var trainee = Trainee.builder().build();
+        var trainee = Trainee.builder().trainers(new java.util.ArrayList<>()).build();
         var query = mockJpqlQuery(Trainee.class);
         when(query.getSingleResult()).thenReturn(trainee);
 

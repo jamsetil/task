@@ -35,10 +35,10 @@ public class Trainee {
     @JoinColumn(name = "user_id")
     User user;
 
-    @OneToMany(mappedBy = "trainee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "trainee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     List<Training> trainings;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "trainee_trainers",
             joinColumns = @JoinColumn(name = "trainee_id"),

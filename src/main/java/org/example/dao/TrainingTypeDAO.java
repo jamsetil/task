@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.model.TrainingType;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -21,6 +22,13 @@ public class TrainingTypeDAO {
                     .setParameter("name", name)
                     .getResultList();
             return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+        }
+    }
+
+    public List<TrainingType> getAllTrainingTypes() {
+        try (var em = emf.createEntityManager()) {
+            return em.createQuery("SELECT tt FROM TrainingType tt", TrainingType.class)
+                    .getResultList();
         }
     }
 }

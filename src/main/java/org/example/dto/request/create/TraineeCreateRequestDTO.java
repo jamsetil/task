@@ -19,8 +19,6 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TraineeCreateRequestDTO extends BaseCreateRequestDTO {
-    @Past
     LocalDate dateOfBirth;
-    @NotBlankIfPresent
     String address;
 }

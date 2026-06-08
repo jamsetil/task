@@ -21,10 +21,7 @@ public class UserProfileUpdater {
 
         log.debug("Updating user profile for userName={}", entity.getUserName());
 
-        if (requestDTO.isWantsPasswordChange()) {
-            entity.setPassword(generator.generatePassword());
-            log.info("Password updated for userName={}", entity.getUserName());
-        }
+
 
         boolean nameChanged =
                 !requestDTO.getFirstName().equals(entity.getFirstName())

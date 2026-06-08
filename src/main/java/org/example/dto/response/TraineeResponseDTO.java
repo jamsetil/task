@@ -1,15 +1,18 @@
 package org.example.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.example.model.Training;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TraineeResponseDTO {
@@ -21,5 +24,7 @@ public class TraineeResponseDTO {
     String password;
     String dateOfBirth;
     String address;
-    List<Training> trainings;
+    String trainerName;
+    List<TrainerResponseDTO> trainerList;
+    List<TrainingResponseDTO> trainings;
 }

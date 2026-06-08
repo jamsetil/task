@@ -3,11 +3,17 @@ package org.example.dao;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
+import org.example.model.Training;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,16 +41,81 @@ public class TraineeDAO {
 
     }
 
+    public List<Trainee> findTraineeTrainings(String username, String fromDate,
+                                              String toDate, String trainerName, String trainingType) {
+
+        try (var em = emf.createEntityManager()) {
+
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+            CriteriaQuery<Trainee> cq = cb.createQuery(Trainee.class);
+            var trainee = cq.from(Trainee.class);
+
+            List<Predicate> predicates = new ArrayList<>();
+
+            Join<Trainee, Training> trainingJoin = trainee.join("trainings");
+
+            predicates.add(
+                    cb.equal(
+                            trainee.get("user")
+                                    .get("userName"),
+                            username
+                    )
+            );
+
+            if (fromDate != null) {
+
+                predicates.add(
+                        cb.greaterThanOrEqualTo(
+                                trainingJoin.get("trainingDate"),
+                                fromDate
+                        )
+                );
+            }
+
+            if (toDate != null) {
+
+                predicates.add(
+                        cb.lessThanOrEqualTo(
+                                trainingJoin.get("trainingDate"),
+                                toDate
+                        )
+                );
+            }
+
+            if (trainingType != null) {
+
+                predicates.add(
+                        cb.equal(
+                                trainingJoin.get("trainingType"),
+                                trainingType
+                        )
+                );
+            }
+
+            if (trainerName != null) {
+
+                predicates.add(
+                        cb.equal(
+                                trainingJoin.get("trainer")
+                                        .get("user")
+                                        .get("firstName"),
+                                trainerName
+                        )
+                );
+            }
+
+            cq.select(trainee).where(predicates.toArray(new Predicate[0]));
+
+            return em.createQuery(cq).getResultList();
+        }
+    }
+
     public Optional<Trainee> find(String username) {
 
-        var em = emf.createEntityManager();
-
-        try {
+        try (var em = emf.createEntityManager()) {
             return Optional.ofNullable(em.createNamedQuery("Trainee.findByUsername", Trainee.class)
                     .setParameter("username", username)
                     .getSingleResult());
-        } finally {
-            em.close();
         }
     }
 
@@ -82,7 +153,7 @@ public class TraineeDAO {
         }
     }
 
-    public Trainee toggleStatus(String username){
+    public Trainee toggleStatus(String username, boolean isActive){
         var em = emf.createEntityManager();
         try {
             var trainee = em.createNamedQuery("Trainee.findByUsername", Trainee.class)
@@ -91,7 +162,7 @@ public class TraineeDAO {
 
             if (trainee != null) {
                 em.getTransaction().begin();
-                trainee.getUser().setIsActive(!trainee.getUser().getIsActive());
+                trainee.getUser().setIsActive(isActive);
                 em.merge(trainee);
                 em.getTransaction().commit();
                 return trainee;
@@ -105,31 +176,18 @@ public class TraineeDAO {
         }
     }
 
-    public Trainee update(String username, Trainee trainee) {
+    public Trainee update(Trainee trainee) {
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
 
         try {
             tx.begin();
 
-            Trainee existingTrainee = em.createNamedQuery(
-                            "Trainee.findByUsername",
-                            Trainee.class
-                    )
-                    .setParameter("username", username)
-                    .getSingleResult();
-
-            existingTrainee.setDateOfBirth(trainee.getDateOfBirth());
-            existingTrainee.setAddress(trainee.getAddress());
-
-            existingTrainee.getUser().setFirstName(trainee.getUser().getFirstName());
-            existingTrainee.getUser().setLastName(trainee.getUser().getLastName());
-            existingTrainee.getUser().setUserName(trainee.getUser().getUserName());
-            existingTrainee.getUser().setIsActive(trainee.getUser().getIsActive());
+            Trainee updatedTrainee = em.merge(trainee);
 
             tx.commit();
 
-            return existingTrainee;
+            return updatedTrainee;
 
         } catch (Exception e) {
             if (tx.isActive()) {
@@ -142,7 +200,7 @@ public class TraineeDAO {
         }
     }
 
-    public void updateTraineeTrainers(
+    public Trainee updateTraineeTrainers(
             String traineeUsername,
             List<String> trainerUsernames
     ) {
@@ -173,6 +231,8 @@ public class TraineeDAO {
 
             em.getTransaction().commit();
 
+            return trainee;
+
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
@@ -200,6 +260,7 @@ public class TraineeDAO {
                     .setParameter("username", username)
                     .getSingleResult();
 
+            trainee.getTrainers().clear();
             em.remove(trainee);
 
             tx.commit();

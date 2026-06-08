@@ -3,25 +3,26 @@ package org.example.service.impl;
 import org.example.dao.TraineeDAO;
 import org.example.dao.TrainerDAO;
 import org.example.dao.TrainingDAO;
-import org.example.dao.TrainingTypeDAO;
 import org.example.dto.TrainingCriteria;
-import org.example.dto.request.LoginRequestDTO;
 import org.example.dto.request.TrainingRequestDTO;
+import org.example.exception.AuthenticationException;
 import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.TrainingType;
 import org.example.model.base.User;
-import org.example.security.AuthValidator;
+import org.example.util.AuthValidator;
 import org.example.validation.RequestValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,14 +32,16 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class TrainingServiceImplTest {
 
+    private static final String TRAINEE_USERNAME = "faiq.azizzade";
+    private static final String TRAINER_USERNAME = "ilyas.azizzade";
+    private static final String PASSWORD = "pwd1234567";
+
     @Mock
     private TrainingDAO trainingDAO;
     @Mock
     private TraineeDAO traineeDAO;
     @Mock
     private TrainerDAO trainerDAO;
-    @Mock
-    private TrainingTypeDAO trainingTypeDAO;
     @Mock
     private AuthValidator authValidator;
     @Mock
@@ -49,190 +52,157 @@ class TrainingServiceImplTest {
 
     @Test
     void createTraining_persistsLinkedEntities() {
-        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        var request = TrainingRequestDTO.builder()
-                .traineeUsername("john.smith")
-                .trainerUsername("ilyas.azizzade")
-                .trainingName("Cardio")
-                .trainingTypeName("Cardio")
-                .trainingDate(LocalDate.now())
-                .trainingDuration(45)
-                .build();
+        var request = trainingRequest();
 
-        var trainee = Trainee.builder()
-                .user(User.builder().userName("john.smith").isActive(true).build())
+        var specialization = TrainingType.builder()
+                .trainingTypeId(1L)
+                .trainingTypeName("Body Building")
                 .build();
-        var trainer = Trainer.builder()
-                .user(User.builder().userName("ilyas.azizzade").isActive(true).build())
-                .build();
-        var type = TrainingType.builder().trainingTypeName("Cardio").build();
+        var trainee = activeTrainee("Faiq", "Azizzade");
+        var trainer = activeTrainer("Ilyas", "Azizzade", specialization);
         var saved = Training.builder().trainingId("id-1").trainingName("Cardio").build();
 
-        when(traineeDAO.find("john.smith")).thenReturn(Optional.of(trainee));
-        when(trainerDAO.find("ilyas.azizzade")).thenReturn(Optional.of(trainer));
-        when(trainingTypeDAO.findByName("Cardio")).thenReturn(Optional.of(type));
+        when(traineeDAO.find(TRAINEE_USERNAME)).thenReturn(Optional.of(trainee));
+        when(trainerDAO.find(TRAINER_USERNAME)).thenReturn(Optional.of(trainer));
         when(trainingDAO.save(any(Training.class))).thenReturn(saved);
 
-        var result = trainingService.createTraining(auth, request);
+        var captor = ArgumentCaptor.forClass(Training.class);
+        var result = trainingService.createTraining(request, PASSWORD);
 
         assertEquals("id-1", result.getTrainingId());
-        verify(authValidator).requireTrainee(auth, "john.smith");
-        verify(trainingDAO).save(any(Training.class));
+        verify(trainingDAO).save(captor.capture());
+        assertEquals(specialization, captor.getValue().getTrainingType());
+        verify(authValidator).requireAuthentication(TRAINEE_USERNAME, PASSWORD);
+        verify(requestValidator).validate(request);
     }
 
     @Test
     void createTraining_missingTrainee_throws() {
-        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        var request = TrainingRequestDTO.builder()
-                .traineeUsername("missing")
-                .trainerUsername("ilyas.azizzade")
-                .trainingName("Cardio")
-                .trainingTypeName("Cardio")
-                .trainingDate(LocalDate.now())
-                .trainingDuration(45)
-                .build();
+        var request = trainingRequest();
 
-        when(traineeDAO.find("missing")).thenReturn(Optional.empty());
+        when(traineeDAO.find(TRAINEE_USERNAME)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(auth, request));
+        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(request, PASSWORD));
     }
 
     @Test
     void createTraining_missingTrainer_throws() {
-        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        var request = TrainingRequestDTO.builder()
-                .traineeUsername("john.smith")
-                .trainerUsername("missing")
-                .trainingName("Cardio")
-                .trainingTypeName("Cardio")
-                .trainingDate(LocalDate.now())
-                .trainingDuration(45)
-                .build();
+        var request = trainingRequest();
 
-        when(traineeDAO.find("john.smith")).thenReturn(Optional.of(
-                Trainee.builder().user(User.builder().isActive(true).build()).build()));
-        when(trainerDAO.find("missing")).thenReturn(Optional.empty());
+        when(traineeDAO.find(TRAINEE_USERNAME)).thenReturn(Optional.of(activeTrainee("Faiq", "Azizzade")));
+        when(trainerDAO.find(TRAINER_USERNAME)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(auth, request));
-    }
-
-    @Test
-    void getAllTrainingsByTraineeUsername_delegatesToDao() {
-        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        var criteria = TrainingCriteria.builder().trainingType("Cardio").build();
-        when(trainingDAO.findTrainingsByTraineeUsername("john.smith", criteria)).thenReturn(java.util.List.of());
-
-        assertTrue(trainingService.getAllTrainingsByTraineeUsername(auth, "john.smith", criteria).isEmpty());
-    }
-
-    @Test
-    void getAllTrainingsByTrainerUsername_delegatesToDao() {
-        var auth = LoginRequestDTO.builder().username("trainer").password("pwd").build();
-        when(trainingDAO.findTrainingsByTrainerUsername("trainer", null)).thenReturn(java.util.List.of());
-
-        assertTrue(trainingService.getAllTrainingsByTrainerUsername(auth, "trainer", null).isEmpty());
+        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(request, PASSWORD));
     }
 
     @Test
     void createTraining_inactiveTrainee_throws() {
-        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        var request = TrainingRequestDTO.builder()
-                .traineeUsername("john.smith")
-                .trainerUsername("ilyas.azizzade")
-                .trainingName("Cardio")
-                .trainingTypeName("Cardio")
-                .trainingDate(LocalDate.now())
-                .trainingDuration(45)
-                .build();
+        var request = trainingRequest();
 
-        var trainee = Trainee.builder()
-                .user(User.builder().isActive(false).build())
-                .build();
-        when(traineeDAO.find("john.smith")).thenReturn(Optional.of(trainee));
-        when(trainerDAO.find("ilyas.azizzade")).thenReturn(Optional.of(
-                Trainer.builder().user(User.builder().isActive(true).build()).build()));
-        when(trainingTypeDAO.findByName("Cardio")).thenReturn(Optional.of(
-                TrainingType.builder().trainingTypeName("Cardio").build()));
+        when(traineeDAO.find(TRAINEE_USERNAME)).thenReturn(Optional.of(
+                Trainee.builder()
+                        .user(User.builder().firstName("Faiq").lastName("Azizzade").isActive(false).build())
+                        .build()));
+        when(trainerDAO.find(TRAINER_USERNAME)).thenReturn(Optional.of(
+                activeTrainer("Ilyas", "Azizzade", null)));
 
-        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(auth, request));
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request, PASSWORD));
     }
 
     @Test
     void createTraining_inactiveTrainer_throws() {
-        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        var request = TrainingRequestDTO.builder()
-                .traineeUsername("john.smith")
-                .trainerUsername("ilyas.azizzade")
-                .trainingName("Cardio")
-                .trainingTypeName("Cardio")
-                .trainingDate(LocalDate.now())
-                .trainingDuration(45)
-                .build();
+        var request = trainingRequest();
 
-        when(traineeDAO.find("john.smith")).thenReturn(Optional.of(
-                Trainee.builder().user(User.builder().isActive(true).build()).build()));
-        when(trainerDAO.find("ilyas.azizzade")).thenReturn(Optional.of(
-                Trainer.builder().user(User.builder().isActive(false).build()).build()));
-        when(trainingTypeDAO.findByName("Cardio")).thenReturn(Optional.of(
-                TrainingType.builder().trainingTypeName("Cardio").build()));
+        when(traineeDAO.find(TRAINEE_USERNAME)).thenReturn(Optional.of(activeTrainee("Faiq", "Azizzade")));
+        when(trainerDAO.find(TRAINER_USERNAME)).thenReturn(Optional.of(
+                Trainer.builder()
+                        .user(User.builder().firstName("Ilyas").lastName("Azizzade").isActive(false).build())
+                        .build()));
 
-        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(auth, request));
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request, PASSWORD));
     }
 
     @Test
-    void createTraining_missingTrainingType_throws() {
-        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        var request = TrainingRequestDTO.builder()
-                .traineeUsername("john.smith")
-                .trainerUsername("ilyas.azizzade")
-                .trainingName("Cardio")
-                .trainingTypeName("Unknown")
-                .trainingDate(LocalDate.now())
-                .trainingDuration(45)
-                .build();
+    void createTraining_missingSpecialization_throws() {
+        var request = trainingRequest();
 
-        when(traineeDAO.find("john.smith")).thenReturn(Optional.of(
-                Trainee.builder().user(User.builder().isActive(true).build()).build()));
-        when(trainerDAO.find("ilyas.azizzade")).thenReturn(Optional.of(
-                Trainer.builder().user(User.builder().isActive(true).build()).build()));
-        when(trainingTypeDAO.findByName("Unknown")).thenReturn(Optional.empty());
+        when(traineeDAO.find(TRAINEE_USERNAME)).thenReturn(Optional.of(activeTrainee("Faiq", "Azizzade")));
+        when(trainerDAO.find(TRAINER_USERNAME)).thenReturn(Optional.of(
+                activeTrainer("Ilyas", "Azizzade", null)));
 
-        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(auth, request));
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request, PASSWORD));
     }
 
     @Test
-    void getTraining_returnsEntity() {
-        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        var training = Training.builder().trainingId("id-1").build();
-        when(trainingDAO.find("id-1")).thenReturn(Optional.of(training));
+    void createTraining_invalidAuth_throws() {
+        var request = trainingRequest();
 
-        assertEquals("id-1", trainingService.getTraining(auth, "id-1").getTrainingId());
-        verify(authValidator).requireTrainee(auth, "john.smith");
-    }
+        doThrow(new AuthenticationException("Invalid username or password"))
+                .when(authValidator).requireAuthentication(TRAINEE_USERNAME, "bad");
 
-    @Test
-    void createTraining_invalidDuration_throws() {
-        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        var request = TrainingRequestDTO.builder()
-                .traineeUsername("john.smith")
-                .trainerUsername("ilyas.azizzade")
-                .trainingName("Cardio")
-                .trainingTypeName("Cardio")
-                .trainingDate(LocalDate.now())
-                .trainingDuration(0)
-                .build();
-        doThrow(new IllegalArgumentException("Validation failed"))
-                .when(requestValidator).validate(request);
-
-        assertThrows(IllegalArgumentException.class, () -> trainingService.createTraining(auth, request));
+        assertThrows(AuthenticationException.class, () -> trainingService.createTraining(request, "bad"));
         verify(traineeDAO, never()).find(any());
     }
 
     @Test
-    void getTraining_notFound_throws() {
-        var auth = LoginRequestDTO.builder().username("john.smith").password("pwd").build();
-        when(trainingDAO.find("missing")).thenReturn(Optional.empty());
+    void getAllTrainingsByTraineeUsername_delegatesToDao() {
+        var criteria = TrainingCriteria.builder().trainingType("Cardio").build();
+        when(trainingDAO.findTrainingsByTraineeUsername(TRAINEE_USERNAME, criteria)).thenReturn(List.of());
 
-        assertThrows(ResourceNotFoundException.class, () -> trainingService.getTraining(auth, "missing"));
+        assertTrue(trainingService.getAllTrainingsByTraineeUsername(TRAINEE_USERNAME, PASSWORD, criteria).isEmpty());
+        verify(authValidator).requireAuthentication(TRAINEE_USERNAME, PASSWORD);
+        verify(requestValidator).validate(criteria);
+    }
+
+    @Test
+    void getAllTrainingsByTrainerUsername_delegatesToDao() {
+        when(trainingDAO.findTrainingsByTrainerUsername(TRAINER_USERNAME, null)).thenReturn(List.of());
+
+        assertTrue(trainingService.getAllTrainingsByTrainerUsername(TRAINER_USERNAME, PASSWORD, null).isEmpty());
+        verify(authValidator).requireAuthentication(TRAINER_USERNAME, PASSWORD);
+        verify(requestValidator, never()).validate(any());
+    }
+
+    @Test
+    void getAllTrainingsByTrainerUsername_withCriteria_validatesAndDelegates() {
+        var criteria = TrainingCriteria.builder().traineeName("Faiq Azizzade").build();
+        when(trainingDAO.findTrainingsByTrainerUsername(TRAINER_USERNAME, criteria)).thenReturn(List.of());
+
+        assertTrue(trainingService.getAllTrainingsByTrainerUsername(TRAINER_USERNAME, PASSWORD, criteria).isEmpty());
+        verify(authValidator).requireAuthentication(TRAINER_USERNAME, PASSWORD);
+        verify(requestValidator).validate(criteria);
+    }
+
+    private static TrainingRequestDTO trainingRequest() {
+        return TrainingRequestDTO.builder()
+                .traineeUsername(TRAINEE_USERNAME)
+                .trainerUsername(TRAINER_USERNAME)
+                .trainingName("Cardio")
+                .trainingDate(LocalDate.now())
+                .trainingDuration(45)
+                .build();
+    }
+
+    private static Trainee activeTrainee(String firstName, String lastName) {
+        return Trainee.builder()
+                .user(User.builder()
+                        .userName(TRAINEE_USERNAME)
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .isActive(true)
+                        .build())
+                .build();
+    }
+
+    private static Trainer activeTrainer(String firstName, String lastName, TrainingType specialization) {
+        return Trainer.builder()
+                .user(User.builder()
+                        .userName(TRAINER_USERNAME)
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .isActive(true)
+                        .build())
+                .specialization(specialization)
+                .build();
     }
 }

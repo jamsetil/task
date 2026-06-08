@@ -6,14 +6,13 @@ import org.example.dao.TrainerDAO;
 import org.example.dao.TrainingDAO;
 import org.example.dao.TrainingTypeDAO;
 import org.example.dto.TrainingCriteria;
-import org.example.dto.request.LoginRequestDTO;
 import org.example.dto.request.TrainingRequestDTO;
 import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
-import org.example.security.AuthValidator;
 import org.example.service.TrainingService;
+import org.example.util.AuthValidator;
 import org.example.validation.RequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,17 +31,15 @@ public class TrainingServiceImpl implements TrainingService {
     @Autowired
     private TrainerDAO trainerDAO;
     @Autowired
-    private TrainingTypeDAO trainingTypeDAO;
-    @Autowired
     private AuthValidator authValidator;
     @Autowired
     private RequestValidator requestValidator;
 
     @Override
     @Transactional
-    public Training createTraining(LoginRequestDTO auth, TrainingRequestDTO requestDTO) {
+    public Training createTraining(TrainingRequestDTO requestDTO, String password) {
         requestValidator.validate(requestDTO);
-        authValidator.requireTrainee(auth, requestDTO.getTraineeUsername());
+        authValidator.requireAuthentication(requestDTO.getTraineeUsername(), password);
 
         Trainee trainee = traineeDAO.find(requestDTO.getTraineeUsername())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -52,15 +49,14 @@ public class TrainingServiceImpl implements TrainingService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Trainer not found: " + requestDTO.getTrainerUsername()));
 
-        var trainingType = trainingTypeDAO.findByName(requestDTO.getTrainingTypeName())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Training type not found: " + requestDTO.getTrainingTypeName()));
-
         if (!Boolean.TRUE.equals(trainee.getUser().getIsActive())) {
             throw new IllegalStateException("Trainee profile is not active");
         }
         if (!Boolean.TRUE.equals(trainer.getUser().getIsActive())) {
             throw new IllegalStateException("Trainer profile is not active");
+        }
+        if (trainer.getSpecialization() == null) {
+            throw new IllegalStateException("Trainer specialization is not set");
         }
 
         log.info("Creating training '{}' for trainee={} with trainer={}",
@@ -74,7 +70,7 @@ public class TrainingServiceImpl implements TrainingService {
                 .trainingDuration(requestDTO.getTrainingDuration())
                 .trainee(trainee)
                 .trainer(trainer)
-                .trainingType(trainingType)
+                .trainingType(trainer.getSpecialization())
                 .build();
 
         training = trainingDAO.save(training);
@@ -83,20 +79,9 @@ public class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
-    public Training getTraining(LoginRequestDTO auth, String trainingId) {
-        authValidator.requireTrainee(auth, auth.getUsername());
-        log.debug("Fetching training with trainingId={}", trainingId);
-        return trainingDAO.find(trainingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Training not found with id: " + trainingId));
-    }
-
-    @Override
-    public List<Training> getAllTrainingsByTraineeUsername(
-            LoginRequestDTO auth,
-            String traineeUsername,
-            TrainingCriteria criteria
-    ) {
-        authValidator.requireTrainee(auth, traineeUsername);
+    public List<Training> getAllTrainingsByTraineeUsername(String traineeUsername, String password,
+                                                           TrainingCriteria criteria) {
+        authValidator.requireAuthentication(traineeUsername, password);
         if (criteria != null) {
             requestValidator.validate(criteria);
         }
@@ -105,12 +90,9 @@ public class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
-    public List<Training> getAllTrainingsByTrainerUsername(
-            LoginRequestDTO auth,
-            String trainerUsername,
-            TrainingCriteria criteria
-    ) {
-        authValidator.requireTrainer(auth, trainerUsername);
+    public List<Training> getAllTrainingsByTrainerUsername(String trainerUsername, String password,
+                                                           TrainingCriteria criteria) {
+        authValidator.requireAuthentication(trainerUsername, password);
         if (criteria != null) {
             requestValidator.validate(criteria);
         }

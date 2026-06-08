@@ -110,13 +110,13 @@ class TrainerDAOTest extends DaoTestSupport {
     }
 
     @Test
-    void toggleStatus_invertsActiveFlag() {
+    void toggleStatus_setsRequestedStatus() {
         var user = User.builder().isActive(false).build();
         var trainer = Trainer.builder().user(user).build();
         var query = mockNamedQuery(Trainer.class);
         when(query.getSingleResult()).thenReturn(trainer);
 
-        Trainer result = trainerDAO.toggleStatus("trainer");
+        Trainer result = trainerDAO.toggleStatus("trainer", true);
 
         assertTrue(user.getIsActive());
         verify(em).merge(trainer);
@@ -125,40 +125,45 @@ class TrainerDAOTest extends DaoTestSupport {
     }
 
     @Test
+    void toggleStatus_sameStatusStillUpdates() {
+        var user = User.builder().isActive(true).build();
+        var trainer = Trainer.builder().user(user).build();
+        var query = mockNamedQuery(Trainer.class);
+        when(query.getSingleResult()).thenReturn(trainer);
+
+        trainerDAO.toggleStatus("trainer", true);
+
+        assertTrue(user.getIsActive());
+        verify(em).merge(trainer);
+        verify(tx).commit();
+    }
+
+    @Test
     void toggleStatus_onError_rollsBackAndThrows() {
         var query = mockNamedQuery(Trainer.class);
         when(query.getSingleResult()).thenThrow(new RuntimeException("not found"));
         when(tx.isActive()).thenReturn(true);
 
-        assertThrows(RuntimeException.class, () -> trainerDAO.toggleStatus("trainer"));
+        assertThrows(RuntimeException.class, () -> trainerDAO.toggleStatus("trainer", true));
 
         verify(tx).rollback();
     }
 
     @Test
-    void update_updatesExistingTrainerFields() {
-        var existingUser = User.builder()
-                .firstName("Old")
-                .lastName("Name")
-                .userName("old.trainer")
-                .isActive(true)
-                .build();
-        var existing = Trainer.builder().user(existingUser).build();
-
+    void update_mergesTrainer() {
         var updateUser = User.builder()
                 .firstName("New")
                 .lastName("Trainer")
                 .userName("new.trainer")
                 .isActive(false)
                 .build();
+        var trainer = Trainer.builder().user(updateUser).build();
 
-        var query = mockNamedQuery(Trainer.class);
-        when(query.getSingleResult()).thenReturn(existing);
+        when(em.merge(trainer)).thenReturn(trainer);
 
-        Trainer result = trainerDAO.update("trainer", Trainer.builder().user(updateUser).build());
+        Trainer result = trainerDAO.update(trainer);
 
         assertEquals("New", result.getUser().getFirstName());
-        assertEquals("new.trainer", result.getUser().getUserName());
         verify(tx).commit();
     }
 

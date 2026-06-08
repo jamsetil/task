@@ -66,26 +66,4 @@ class UserProfileUpdaterTest {
 
         assertEquals("john.smith", user.getUserName());
     }
-
-    @Test
-    void updateUserProfile_passwordChange_generatesNewPassword() {
-        var user = User.builder()
-                .firstName("John")
-                .lastName("Smith")
-                .userName("john.smith")
-                .password("old")
-                .build();
-
-        var request = BaseUpdateRequestDTO.builder()
-                .firstName("John")
-                .lastName("Smith")
-                .wantsPasswordChange(true)
-                .build();
-
-        when(generator.generatePassword()).thenReturn("newPassword");
-
-        updater.updateUserProfile(request, user);
-
-        assertEquals("newPassword", user.getPassword());
-    }
 }

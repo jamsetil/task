@@ -27,6 +27,8 @@ public class User {
     String userName;
     @Column(nullable = false)
     String password;
+
+    @Builder.Default
     @Column(nullable = false)
-    Boolean isActive;
+    Boolean isActive= true;
 }

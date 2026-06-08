@@ -22,8 +22,6 @@ public class TrainingRequestDTO {
     String trainerUsername;
     @NotBlank
     String trainingName;
-    @NotBlank
-    String trainingTypeName;
     @NotNull
     @PastOrPresent
     LocalDate trainingDate;

@@ -1,6 +1,8 @@
 package org.example.dto.request.base;
 
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,13 +21,10 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 public class BaseUpdateRequestDTO {
-    @NotBlankIfPresent
-    String username;
-    @NotBlankIfPresent
+    @NotBlank
     String firstName;
-    @NotBlankIfPresent
+    @NotBlank
     String lastName;
+    @NotNull
     Boolean isActive;
-    boolean wantsPasswordChange;
-    List<Training> trainings;
 }

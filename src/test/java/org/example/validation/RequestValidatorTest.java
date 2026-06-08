@@ -2,12 +2,11 @@ package org.example.validation;
 
 import jakarta.validation.constraints.NotBlank;
 import org.example.dto.TrainingCriteria;
-import org.example.dto.request.LoginRequestDTO;
+import org.example.dto.request.ChangeLoginRequestDTO;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.TraineeTrainersUpdateRequestDTO;
 import org.example.dto.request.TrainerRequestDTO;
 import org.example.dto.request.TrainingRequestDTO;
-import org.example.dto.request.create.TraineeCreateRequestDTO;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -49,8 +48,12 @@ class RequestValidatorTest {
     }
 
     @Test
-    void validateUpdate_nullFields_passes() {
-        assertDoesNotThrow(() -> validator.validate(TrainerRequestDTO.builder().build()));
+    void validateUpdate_validRequest_passes() {
+        assertDoesNotThrow(() -> validator.validate(TrainerRequestDTO.builder()
+                .firstName("John")
+                .lastName("Smith")
+                .isActive(true)
+                .build()));
     }
 
     @Test
@@ -67,7 +70,11 @@ class RequestValidatorTest {
 
     @Test
     void validateLogin_blankUsername_throws() {
-        var request = LoginRequestDTO.builder().username(" ").password("pwd").build();
+        var request = ChangeLoginRequestDTO.builder()
+                .username(" ")
+                .oldPassword("pwd")
+                .newPassword("new")
+                .build();
         assertThrows(IllegalArgumentException.class, () -> validator.validate(request));
     }
 
@@ -98,7 +105,6 @@ class RequestValidatorTest {
                 .traineeUsername("john")
                 .trainerUsername("trainer")
                 .trainingName("Cardio")
-                .trainingTypeName("Cardio")
                 .trainingDate(LocalDate.now().plusDays(1))
                 .trainingDuration(30)
                 .build();
@@ -111,14 +117,4 @@ class RequestValidatorTest {
         assertThrows(IllegalArgumentException.class, () -> validator.validate(criteria));
     }
 
-    @Test
-    void validateTraineeCreate_futureDateOfBirth_throws() {
-        var request = TraineeCreateRequestDTO.builder()
-                .firstName("John")
-                .lastName("Smith")
-                .isActive(true)
-                .dateOfBirth(LocalDate.now().plusDays(1))
-                .build();
-        assertThrows(IllegalArgumentException.class, () -> validator.validate(request));
-    }
 }

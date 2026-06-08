@@ -1,30 +1,29 @@
 package org.example.service;
 
-import org.example.dto.request.LoginRequestDTO;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.create.TraineeCreateRequestDTO;
 import org.example.dto.response.TraineeResponseDTO;
+import org.example.dto.response.TrainerResponseDTO;
 import org.example.model.Trainee;
-import org.example.model.Trainer;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface TraineeService {
     TraineeResponseDTO createTrainee(TraineeCreateRequestDTO trainee);
 
-    void updateTrainee(LoginRequestDTO auth, String username, TraineeRequestDTO requestDTO);
+    TraineeResponseDTO updateTrainee(TraineeRequestDTO requestDTO, String username, String password);
 
-    void deleteTrainee(LoginRequestDTO auth, String username);
+    void deleteTrainee(String username, String password);
 
-    Trainee getTrainee(LoginRequestDTO auth, String username);
+    TraineeResponseDTO getTrainee(String username, String password);
 
-    boolean matchTrainee(String username, String password);
+    Trainee changeStatus(String username, boolean isActive, String password);
 
-    boolean changePassword(LoginRequestDTO auth, String oldPassword, String newPassword);
+    TraineeResponseDTO updateTraineeTrainers(String username, List<String> trainerUsernames, String password);
 
-    Trainee changeStatus(LoginRequestDTO auth, String username);
+    List<TrainerResponseDTO> getUnassignedTrainers(String traineeUsername, String password);
 
-    void updateTraineeTrainers(LoginRequestDTO auth, String username, List<String> trainerUsernames);
-
-    List<Trainer> getUnassignedTrainers(LoginRequestDTO auth, String traineeUsername);
+    TraineeResponseDTO getTraineeTrainings(String username, String password, LocalDate fromDate, LocalDate toDate,
+                                           String trainerName, String trainingType);
 }

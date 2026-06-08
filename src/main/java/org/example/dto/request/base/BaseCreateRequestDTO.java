@@ -20,6 +20,5 @@ public class BaseCreateRequestDTO {
     String firstName;
     @NotBlank
     String lastName;
-    @NotNull
-    Boolean isActive;
+
 }

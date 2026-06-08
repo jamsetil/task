@@ -76,7 +76,7 @@ public class TrainerDAO {
         }
     }
 
-    public Trainer toggleStatus(String username) {
+    public Trainer toggleStatus(String username, boolean isActive) {
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
 
@@ -87,7 +87,7 @@ public class TrainerDAO {
                     .setParameter("username", username)
                     .getSingleResult();
 
-            entity.getUser().setIsActive(!entity.getUser().getIsActive());
+            entity.getUser().setIsActive(isActive);
             em.merge(entity);
 
             tx.commit();
@@ -112,7 +112,8 @@ public class TrainerDAO {
             return em.createQuery("""
                 SELECT tr
                 FROM Trainer tr
-                WHERE tr NOT IN (
+                WHERE tr.user.isActive = true
+                AND tr NOT IN (
                     SELECT assigned
                     FROM Trainee t
                     JOIN t.trainers assigned
@@ -128,22 +129,14 @@ public class TrainerDAO {
     }
 
 
-    public Trainer update(String username, Trainer trainer) {
+    public Trainer update(Trainer trainer) {
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
 
         try {
             tx.begin();
 
-            Trainer entity = em.createNamedQuery("Trainer.findByUsername", Trainer.class)
-                    .setParameter("username", username)
-                    .getSingleResult();
-
-
-            entity.getUser().setFirstName(trainer.getUser().getFirstName());
-            entity.getUser().setLastName(trainer.getUser().getLastName());
-            entity.getUser().setUserName(trainer.getUser().getUserName());
-            entity.getUser().setIsActive(trainer.getUser().getIsActive());
+                Trainer entity = em.merge(trainer);
 
             tx.commit();
 
