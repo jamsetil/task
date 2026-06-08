@@ -17,6 +17,11 @@ class TrainingMapperTest {
     private final TrainingMapper mapper = new TrainingMapperImpl();
 
     @Test
+    void toResponseDTO_nullTraining() {
+        assertNull(mapper.toResponseDTO(null));
+    }
+
+    @Test
     void toResponseDTO_mapsTrainingFields() {
         var training = Training.builder()
                 .trainingName("Cardio")

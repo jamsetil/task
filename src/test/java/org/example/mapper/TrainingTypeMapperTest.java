@@ -4,10 +4,16 @@ import org.example.model.TrainingType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class TrainingTypeMapperTest {
 
     private final TrainingTypeMapper mapper = new TrainingTypeMapperImpl();
+
+    @Test
+    void toResponseDTO_nullEntity() {
+        assertNull(mapper.toResponseDTO(null));
+    }
 
     @Test
     void toResponseDTO_mapsFields() {

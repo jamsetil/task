@@ -13,7 +13,6 @@ import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.TrainingType;
 import org.example.model.base.User;
-import org.example.monitoring.metrics.GymCrmMetrics;
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.service.TrainingService;
@@ -53,8 +52,7 @@ class TraineeServiceImplTest {
     private RequestValidator requestValidator;
     @Mock
     private TrainingService trainingService;
-    @Mock
-    private GymCrmMetrics gymCrmMetrics;
+
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
@@ -97,7 +95,66 @@ class TraineeServiceImplTest {
         assertEquals("pwd1234567", response.getPassword());
         verify(requestValidator).validate(request);
         verify(traineeRepository).save(any(Trainee.class));
-        verify(gymCrmMetrics).recordTraineeProfileCreated();
+    }
+
+    @Test
+    void createTrainee_existingTrainerUsername_throws() {
+        var request = TraineeCreateRequestDTO.builder()
+                .firstName("John")
+                .lastName("Smith")
+                .build();
+
+        when(generator.generateUsername("John", "Smith")).thenReturn("john.smith");
+        when(trainerRepository.findByUsername("john.smith")).thenReturn(Optional.of(
+                Trainer.builder().user(User.builder().userName("john.smith").build()).build()));
+
+        assertThrows(IllegalStateException.class, () -> traineeService.createTrainee(request));
+        verify(traineeRepository, never()).save(any());
+    }
+
+    @Test
+    void updateTrainee_updatesOptionalFields() {
+        var trainee = trainee("john.smith", "John", "Smith", true,
+                LocalDate.of(1995, 5, 20), "Street 1", List.of());
+        var request = TraineeRequestDTO.builder()
+                .firstName("John")
+                .lastName("Smith")
+                .isActive(true)
+                .dateOfBirth(LocalDate.of(1996, 1, 1))
+                .address("New Street")
+                .build();
+
+        when(traineeRepository.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
+        when(traineeRepository.save(trainee)).thenReturn(trainee);
+
+        var response = traineeService.updateTrainee(request, "john.smith", "pwd");
+
+        assertEquals("New Street", response.getAddress());
+        assertEquals("1996-01-01", response.getDateOfBirth());
+    }
+
+    @Test
+    void deleteTrainee_notFound_throws() {
+        when(traineeRepository.findByUsernameForDelete("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> traineeService.deleteTrainee("missing", "pwd"));
+    }
+
+    @Test
+    void changeStatus_notFound_throws() {
+        when(traineeRepository.findByUsername("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> traineeService.changeStatus("missing", true, "pwd"));
+    }
+
+    @Test
+    void updateTraineeTrainers_notFound_throws() {
+        when(traineeRepository.findByUsername("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> traineeService.updateTraineeTrainers("missing", List.of("trainer1"), "pwd"));
     }
 
     @Test

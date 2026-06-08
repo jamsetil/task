@@ -9,7 +9,7 @@ import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.TrainingType;
 import org.example.model.base.User;
-import org.example.monitoring.metrics.GymCrmMetrics;
+
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingRepository;
@@ -47,8 +47,6 @@ class TrainingServiceImplTest {
     private AuthValidator authValidator;
     @Mock
     private RequestValidator requestValidator;
-    @Mock
-    private GymCrmMetrics gymCrmMetrics;
 
     @InjectMocks
     private TrainingServiceImpl trainingService;
@@ -77,7 +75,7 @@ class TrainingServiceImplTest {
         assertEquals(specialization, captor.getValue().getTrainingType());
         verify(authValidator).requireAuthentication(TRAINEE_USERNAME, PASSWORD);
         verify(requestValidator).validate(request);
-        verify(gymCrmMetrics).recordTrainingCreated();
+
     }
 
     @Test

@@ -66,6 +66,27 @@ class TraineeMapperTest {
     }
 
     @Test
+    void toResponseDTO_nullTrainee() {
+        assertNull(traineeMapper.toResponseDTO(null));
+    }
+
+    @Test
+    void toResponseDTO_nullTrainersList() {
+        var trainee = Trainee.builder()
+                .user(User.builder()
+                        .userName("faiq.azizzade")
+                        .firstName("Faiq")
+                        .lastName("Azizzade")
+                        .isActive(true)
+                        .build())
+                .build();
+
+        var dto = traineeMapper.toResponseDTO(trainee);
+
+        assertNull(dto.getTrainerList());
+    }
+
+    @Test
     void toResponseDTO_nullDateOfBirth() {
         var trainee = Trainee.builder()
                 .user(User.builder()

@@ -32,6 +32,38 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleUnauthorizedException_returnsUnauthorized() {
+        var response = handler.handleUnauthorizedException(new UnauthorizedException("Access denied"));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertEquals("Access denied", response.getBody().get("message"));
+    }
+
+    @Test
+    void handleUnauthorizedException_nullMessage_usesDefault() {
+        var response = handler.handleUnauthorizedException(new UnauthorizedException(null));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertEquals("Unauthorized", response.getBody().get("message"));
+    }
+
+    @Test
+    void handleBadRequest_returnsBadRequest() {
+        var response = handler.handleBadRequest(new IllegalStateException("user already registered as trainer"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("user already registered as trainer", response.getBody().get("message"));
+    }
+
+    @Test
+    void handleAllExceptions_nullMessage_usesDefault() {
+        var response = handler.handleAllExceptions(new RuntimeException());
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals("Internal server error", response.getBody().get("message"));
+    }
+
+    @Test
     void handleAuthenticationException_returnsUnauthorized() {
         var response = handler.handleAuthenticationException(new AuthenticationException("Invalid credentials"));
 

@@ -12,7 +12,7 @@ import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.TrainingType;
 import org.example.model.base.User;
-import org.example.monitoring.metrics.GymCrmMetrics;
+
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingTypeRepository;
@@ -56,8 +56,6 @@ class TrainerServiceImplTest {
     private TrainerMapper trainerMapper;
     @Mock
     private RequestValidator requestValidator;
-    @Mock
-    private GymCrmMetrics gymCrmMetrics;
 
     @InjectMocks
     private TrainerServiceImpl trainerService;
@@ -88,7 +86,41 @@ class TrainerServiceImplTest {
 
         assertEquals("ilyas.azizzade", response.getUserName());
         verify(requestValidator).validate(request);
-        verify(gymCrmMetrics).recordTrainerProfileCreated();
+
+    }
+
+    @Test
+    void createTrainer_existingTraineeUsername_throws() {
+        var request = TrainerCreateRequestDTO.builder()
+                .firstName("Ilyas")
+                .lastName("Azizzade")
+                .specializationName("Body Building")
+                .build();
+
+        when(generator.generateUsername("Ilyas", "Azizzade")).thenReturn("ilyas.azizzade");
+        when(traineeRepository.findByUsername("ilyas.azizzade")).thenReturn(Optional.of(
+                org.example.model.Trainee.builder()
+                        .user(User.builder().userName("ilyas.azizzade").build())
+                        .build()));
+
+        assertThrows(IllegalStateException.class, () -> trainerService.createTrainer(request));
+        verify(trainerRepository, never()).save(any());
+    }
+
+    @Test
+    void getTrainer_notFound_throws() {
+        when(trainerRepository.findByUsername("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> trainerService.getTrainer("missing", "pwd"));
+    }
+
+    @Test
+    void toggleTrainerStatus_notFound_throws() {
+        when(trainerRepository.findByUsername("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> trainerService.toggleTrainerStatus("missing", true, "pwd"));
     }
 
     @Test

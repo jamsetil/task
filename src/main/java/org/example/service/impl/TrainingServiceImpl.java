@@ -21,6 +21,7 @@ import java.util.List;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 public class TrainingServiceImpl implements TrainingService {
 
     @Autowired

@@ -42,4 +42,12 @@ class UserServiceImplTest {
         verify(authValidator).requireAuthentication("john", "old");
         verify(userRepository).save(any(User.class));
     }
+
+    @Test
+    void changePassword_userNotFound_throws() {
+        when(userRepository.findByUserName("missing")).thenReturn(Optional.empty());
+
+        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
+                () -> userService.changePassword("missing", "old", "new"));
+    }
 }

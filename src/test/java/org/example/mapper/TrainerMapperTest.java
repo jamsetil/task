@@ -52,6 +52,34 @@ class TrainerMapperTest {
     }
 
     @Test
+    void toResponseDTO_nullTrainer() {
+        assertNull(mapper.toResponseDTO(null));
+    }
+
+    @Test
+    void toResponseDTO_nullTraineesAndSpecialization() {
+        var trainer = Trainer.builder()
+                .user(User.builder()
+                        .userName("ilyas.azizzade")
+                        .firstName("Ilyas")
+                        .lastName("Azizzade")
+                        .isActive(true)
+                        .build())
+                .build();
+
+        var dto = mapper.toResponseDTO(trainer);
+
+        assertEquals("ilyas.azizzade", dto.getUserName());
+        assertNull(dto.getSpecializationId());
+        assertNull(dto.getTraineeResponseDTOList());
+    }
+
+    @Test
+    void toTraineeDto_nullTrainee() {
+        assertNull(mapper.toTraineeDto(null));
+    }
+
+    @Test
     void toTraineeDto_mapsTraineeFields() {
         var trainee = Trainee.builder()
                 .user(User.builder()
