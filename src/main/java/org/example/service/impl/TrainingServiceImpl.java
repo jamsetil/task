@@ -7,7 +7,6 @@ import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
-import org.example.monitoring.metrics.GymCrmMetrics;
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingRepository;
@@ -34,8 +33,7 @@ public class TrainingServiceImpl implements TrainingService {
     private AuthValidator authValidator;
     @Autowired
     private RequestValidator requestValidator;
-    @Autowired
-    private GymCrmMetrics gymCrmMetrics;
+
 
     @Override
     @Transactional
@@ -76,7 +74,7 @@ public class TrainingServiceImpl implements TrainingService {
                 .build();
 
         training = trainingRepository.save(training);
-        gymCrmMetrics.recordTrainingCreated();
+
         log.info("Training created successfully with trainingId={}", training.getTrainingId());
         return training;
     }

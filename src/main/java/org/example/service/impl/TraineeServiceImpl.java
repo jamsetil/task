@@ -14,7 +14,6 @@ import org.example.mapper.TrainingMapper;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.base.User;
-import org.example.monitoring.metrics.GymCrmMetrics;
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.service.TraineeService;
@@ -51,8 +50,6 @@ public class TraineeServiceImpl implements TraineeService {
     private TrainerMapper trainerMapper;
     @Autowired
     private TrainingMapper trainingMapper;
-    @Autowired
-    private GymCrmMetrics gymCrmMetrics;
 
     @Override
     @Transactional
@@ -81,7 +78,6 @@ public class TraineeServiceImpl implements TraineeService {
                 .user(user)
                 .build();
         traineeRepository.save(trainee);
-        gymCrmMetrics.recordTraineeProfileCreated();
         log.info("Trainee created successfully with username={}", username);
 
         return TraineeResponseDTO.builder()

@@ -10,7 +10,6 @@ import org.example.mapper.TrainerMapper;
 import org.example.mapper.TrainingMapper;
 import org.example.model.Trainer;
 import org.example.model.base.User;
-import org.example.monitoring.metrics.GymCrmMetrics;
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingTypeRepository;
@@ -48,8 +47,6 @@ public class TrainerServiceImpl implements TrainerService {
     private TrainingMapper trainingMapper;
     @Autowired
     private RequestValidator requestValidator;
-    @Autowired
-    private GymCrmMetrics gymCrmMetrics;
 
     @Override
     @Transactional
@@ -81,7 +78,7 @@ public class TrainerServiceImpl implements TrainerService {
                 .build();
 
         trainerRepository.save(trainer);
-        gymCrmMetrics.recordTrainerProfileCreated();
+
         log.info("Trainer profile created successfully, username={}", username);
 
         return TrainerResponseDTO.builder()
