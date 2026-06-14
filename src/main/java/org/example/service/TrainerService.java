@@ -10,12 +10,12 @@ import java.time.LocalDate;
 public interface TrainerService {
     TrainerResponseDTO createTrainer(TrainerCreateRequestDTO trainer);
 
-    TrainerResponseDTO updateTrainer(TrainerRequestDTO trainer, String username, String password);
+    TrainerResponseDTO updateTrainer(TrainerRequestDTO trainer, String username);
 
-    TrainerResponseDTO getTrainer(String username, String password);
+    TrainerResponseDTO getTrainer(String username);
 
-    Trainer toggleTrainerStatus(String username, boolean isActive, String password);
+    Trainer toggleTrainerStatus(String username, boolean isActive);
 
-    TrainerResponseDTO getTrainerTrainings(String username, String password, LocalDate fromDate, LocalDate toDate,
+    TrainerResponseDTO getTrainerTrainings(String username, LocalDate fromDate, LocalDate toDate,
                                            String traineeName);
 }

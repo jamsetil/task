@@ -20,8 +20,10 @@ import org.example.service.TraineeService;
 import org.example.service.TrainingService;
 import org.example.util.AuthValidator;
 import org.example.util.CredentialGenerator;
+import org.example.util.JwtUtil;
 import org.example.validation.RequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +53,10 @@ public class TraineeServiceImpl implements TraineeService {
     private TrainerMapper trainerMapper;
     @Autowired
     private TrainingMapper trainingMapper;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Override
     @Transactional
@@ -70,7 +76,7 @@ public class TraineeServiceImpl implements TraineeService {
                 .userName(username)
                 .firstName(requestDTO.getFirstName())
                 .lastName(requestDTO.getLastName())
-                .password(password)
+                .password(passwordEncoder.encode(password))
                 .build();
 
         Trainee trainee = Trainee.builder()
@@ -84,14 +90,15 @@ public class TraineeServiceImpl implements TraineeService {
         return TraineeResponseDTO.builder()
                 .password(password)
                 .userName(username)
+                .token(jwtUtil.generateToken(username))
                 .build();
     }
 
     @Override
     @Transactional
-    public TraineeResponseDTO updateTrainee(TraineeRequestDTO requestDTO, String username, String password) {
+    public TraineeResponseDTO updateTrainee(TraineeRequestDTO requestDTO, String username) {
         requestValidator.validate(requestDTO);
-        authValidator.requireAuthentication(username, password);
+        authValidator.requireCurrentUser(username);
         Trainee trainee = traineeRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Trainee not found with username: " + username));
@@ -118,8 +125,8 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public void deleteTrainee(String username, String password) {
-        authValidator.requireAuthentication(username, password);
+    public void deleteTrainee(String username) {
+        authValidator.requireCurrentUser(username);
         log.warn("Deleting trainee with username={}", username);
         Trainee trainee = traineeRepository.findByUsernameForDelete(username)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -130,8 +137,8 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public TraineeResponseDTO getTrainee(String username, String password) {
-        authValidator.requireAuthentication(username, password);
+    public TraineeResponseDTO getTrainee(String username) {
+        authValidator.requireCurrentUser(username);
         log.debug("Fetching trainee with username={}", username);
 
         Trainee trainee = traineeRepository.findByUsername(username)
@@ -143,8 +150,8 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public Trainee changeStatus(String username, boolean isActive, String password) {
-        authValidator.requireAuthentication(username, password);
+    public Trainee changeStatus(String username, boolean isActive) {
+        authValidator.requireCurrentUser(username);
         log.info("Toggling trainee active status, username={} isActive={}", username, isActive);
         Trainee trainee = traineeRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -155,8 +162,8 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public TraineeResponseDTO updateTraineeTrainers(String username, List<String> trainerUsernames, String password) {
-        authValidator.requireAuthentication(username, password);
+    public TraineeResponseDTO updateTraineeTrainers(String username, List<String> trainerUsernames) {
+        authValidator.requireCurrentUser(username);
         requestValidator.validate(TraineeTrainersUpdateRequestDTO.builder()
                 .trainerUsernames(trainerUsernames)
                 .build());
@@ -174,8 +181,8 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public List<TrainerResponseDTO> getUnassignedTrainers(String traineeUsername, String password) {
-        authValidator.requireAuthentication(traineeUsername, password);
+    public List<TrainerResponseDTO> getUnassignedTrainers(String traineeUsername) {
+        authValidator.requireCurrentUser(traineeUsername);
         log.debug("Fetching unassigned active trainers for trainee username={}", traineeUsername);
         return trainerRepository.findActiveNotAssignedToTrainee(traineeUsername).stream()
                 .map(trainerMapper::toResponseDTO)
@@ -183,8 +190,7 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public TraineeResponseDTO getTraineeTrainings(String username, String password,
-                                                  LocalDate fromDate, LocalDate toDate,
+    public TraineeResponseDTO getTraineeTrainings(String username, LocalDate fromDate, LocalDate toDate,
                                                   String trainerName, String trainingType) {
         TrainingCriteria criteria = TrainingCriteria.builder()
                 .fromDate(fromDate)
@@ -193,7 +199,7 @@ public class TraineeServiceImpl implements TraineeService {
                 .trainingType(trainingType)
                 .build();
 
-        var trainings = trainingService.getAllTrainingsByTraineeUsername(username, password, criteria);
+        var trainings = trainingService.getAllTrainingsByTraineeUsername(username, criteria);
 
         return TraineeResponseDTO.builder()
                 .trainings(trainings.stream().map(trainingMapper::toResponseDTO).toList())

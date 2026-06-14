@@ -2,14 +2,13 @@ package org.example.service.impl;
 
 import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TrainingRequestDTO;
-import org.example.exception.AuthenticationException;
 import org.example.exception.ResourceNotFoundException;
+import org.example.exception.UnauthorizedException;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.TrainingType;
 import org.example.model.base.User;
-
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingRepository;
@@ -35,7 +34,6 @@ class TrainingServiceImplTest {
 
     private static final String TRAINEE_USERNAME = "faiq.azizzade";
     private static final String TRAINER_USERNAME = "ilyas.azizzade";
-    private static final String PASSWORD = "pwd1234567";
 
     @Mock
     private TrainingRepository trainingRepository;
@@ -68,14 +66,13 @@ class TrainingServiceImplTest {
         when(trainingRepository.save(any(Training.class))).thenReturn(saved);
 
         var captor = ArgumentCaptor.forClass(Training.class);
-        var result = trainingService.createTraining(request, PASSWORD);
+        var result = trainingService.createTraining(request);
 
         assertEquals("id-1", result.getTrainingId());
         verify(trainingRepository).save(captor.capture());
         assertEquals(specialization, captor.getValue().getTrainingType());
-        verify(authValidator).requireAuthentication(TRAINEE_USERNAME, PASSWORD);
+        verify(authValidator).requireCurrentUser(TRAINEE_USERNAME);
         verify(requestValidator).validate(request);
-
     }
 
     @Test
@@ -84,7 +81,7 @@ class TrainingServiceImplTest {
 
         when(traineeRepository.findByUsername(TRAINEE_USERNAME)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(request, PASSWORD));
+        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(request));
     }
 
     @Test
@@ -94,7 +91,7 @@ class TrainingServiceImplTest {
         when(traineeRepository.findByUsername(TRAINEE_USERNAME)).thenReturn(Optional.of(activeTrainee("Faiq", "Azizzade")));
         when(trainerRepository.findByUsername(TRAINER_USERNAME)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(request, PASSWORD));
+        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(request));
     }
 
     @Test
@@ -108,7 +105,7 @@ class TrainingServiceImplTest {
         when(trainerRepository.findByUsername(TRAINER_USERNAME)).thenReturn(Optional.of(
                 activeTrainer("Ilyas", "Azizzade", null)));
 
-        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request, PASSWORD));
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request));
     }
 
     @Test
@@ -121,7 +118,7 @@ class TrainingServiceImplTest {
                         .user(User.builder().firstName("Ilyas").lastName("Azizzade").isActive(false).build())
                         .build()));
 
-        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request, PASSWORD));
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request));
     }
 
     @Test
@@ -132,17 +129,17 @@ class TrainingServiceImplTest {
         when(trainerRepository.findByUsername(TRAINER_USERNAME)).thenReturn(Optional.of(
                 activeTrainer("Ilyas", "Azizzade", null)));
 
-        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request, PASSWORD));
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request));
     }
 
     @Test
     void createTraining_invalidAuth_throws() {
         var request = trainingRequest();
 
-        doThrow(new AuthenticationException("Invalid username or password"))
-                .when(authValidator).requireAuthentication(TRAINEE_USERNAME, "bad");
+        doThrow(new UnauthorizedException("Access denied"))
+                .when(authValidator).requireCurrentUser(TRAINEE_USERNAME);
 
-        assertThrows(AuthenticationException.class, () -> trainingService.createTraining(request, "bad"));
+        assertThrows(UnauthorizedException.class, () -> trainingService.createTraining(request));
         verify(traineeRepository, never()).findByUsername(any());
     }
 
@@ -151,8 +148,8 @@ class TrainingServiceImplTest {
         var criteria = TrainingCriteria.builder().trainingType("Cardio").build();
         when(trainingRepository.findByTraineeUsername(TRAINEE_USERNAME, criteria)).thenReturn(List.of());
 
-        assertTrue(trainingService.getAllTrainingsByTraineeUsername(TRAINEE_USERNAME, PASSWORD, criteria).isEmpty());
-        verify(authValidator).requireAuthentication(TRAINEE_USERNAME, PASSWORD);
+        assertTrue(trainingService.getAllTrainingsByTraineeUsername(TRAINEE_USERNAME, criteria).isEmpty());
+        verify(authValidator).requireCurrentUser(TRAINEE_USERNAME);
         verify(requestValidator).validate(criteria);
     }
 
@@ -160,8 +157,8 @@ class TrainingServiceImplTest {
     void getAllTrainingsByTrainerUsername_delegatesToRepository() {
         when(trainingRepository.findByTrainerUsername(TRAINER_USERNAME, null)).thenReturn(List.of());
 
-        assertTrue(trainingService.getAllTrainingsByTrainerUsername(TRAINER_USERNAME, PASSWORD, null).isEmpty());
-        verify(authValidator).requireAuthentication(TRAINER_USERNAME, PASSWORD);
+        assertTrue(trainingService.getAllTrainingsByTrainerUsername(TRAINER_USERNAME, null).isEmpty());
+        verify(authValidator).requireCurrentUser(TRAINER_USERNAME);
         verify(requestValidator, never()).validate(any());
     }
 
@@ -170,8 +167,8 @@ class TrainingServiceImplTest {
         var criteria = TrainingCriteria.builder().traineeName("Faiq Azizzade").build();
         when(trainingRepository.findByTrainerUsername(TRAINER_USERNAME, criteria)).thenReturn(List.of());
 
-        assertTrue(trainingService.getAllTrainingsByTrainerUsername(TRAINER_USERNAME, PASSWORD, criteria).isEmpty());
-        verify(authValidator).requireAuthentication(TRAINER_USERNAME, PASSWORD);
+        assertTrue(trainingService.getAllTrainingsByTrainerUsername(TRAINER_USERNAME, criteria).isEmpty());
+        verify(authValidator).requireCurrentUser(TRAINER_USERNAME);
         verify(requestValidator).validate(criteria);
     }
 

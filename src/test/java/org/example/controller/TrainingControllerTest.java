@@ -1,9 +1,12 @@
 package org.example.controller;
 
 import org.example.dto.request.TrainingRequestDTO;
+import org.example.filter.JwtAuthFilter;
 import org.example.service.TrainingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -13,12 +16,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(TrainingController.class)
+@WebMvcTest(controllers = TrainingController.class, excludeAutoConfiguration = SecurityAutoConfiguration.class)
+@AutoConfigureMockMvc(addFilters = false)
 class TrainingControllerTest {
 
     @Autowired
@@ -29,6 +32,9 @@ class TrainingControllerTest {
 
     @MockBean
     private TrainingService trainingService;
+
+    @MockBean
+    private JwtAuthFilter jwtAuthFilter;
 
     @Test
     void createTraining_returnsOk() throws Exception {
@@ -41,11 +47,10 @@ class TrainingControllerTest {
                 .build();
 
         mockMvc.perform(post("/trainings")
-                        .param("password", "pwd")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(trainingService).createTraining(any(TrainingRequestDTO.class), eq("pwd"));
+        verify(trainingService).createTraining(any(TrainingRequestDTO.class));
     }
 }

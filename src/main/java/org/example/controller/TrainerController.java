@@ -31,27 +31,24 @@ public class TrainerController {
     @GetMapping("/{username}")
     @Operation(summary = "get trainer profile", description = "returns trainer by username")
     public ResponseEntity<TrainerResponseDTO> getTrainerByUserName(
-            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
-            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password) {
-        return ResponseEntity.ok(trainerService.getTrainer(username, password));
+            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username) {
+        return ResponseEntity.ok(trainerService.getTrainer(username));
     }
 
     @PutMapping("/{username}")
     @Operation(summary = "update trainer profile", description = "updates trainer fields")
     public ResponseEntity<TrainerResponseDTO> updateTrainer(
             @RequestBody @Valid TrainerRequestDTO requestDTO,
-            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
-            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password) {
-        return ResponseEntity.ok(trainerService.updateTrainer(requestDTO, username, password));
+            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username) {
+        return ResponseEntity.ok(trainerService.updateTrainer(requestDTO, username));
     }
 
     @PatchMapping("/{username}/status")
     @Operation(summary = "update trainer status", description = "activate or deactivate trainer")
     public ResponseEntity<Void> toggleTrainerStatus(
             @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
-            @Parameter(description = "is active", required = true) @RequestParam(name = "isActive") boolean isActive,
-            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password) {
-        trainerService.toggleTrainerStatus(username, isActive, password);
+            @Parameter(description = "is active", required = true) @RequestParam(name = "isActive") boolean isActive) {
+        trainerService.toggleTrainerStatus(username, isActive);
         return ResponseEntity.ok().build();
     }
 
@@ -59,11 +56,10 @@ public class TrainerController {
     @Operation(summary = "get trainer trainings", description = "list trainings with optional filters")
     public ResponseEntity<TrainerResponseDTO> getTrainerTrainings(
             @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
-            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password,
             @Parameter(description = "from date") @RequestParam(name = "fromDate", required = false) LocalDate fromDate,
             @Parameter(description = "to date") @RequestParam(name = "toDate", required = false) LocalDate toDate,
             @Parameter(description = "trainee name") @RequestParam(name = "traineeName", required = false) String traineeName) {
-        return ResponseEntity.ok(trainerService.getTrainerTrainings(username, password,
+        return ResponseEntity.ok(trainerService.getTrainerTrainings(username,
                 fromDate, toDate, traineeName));
     }
 }

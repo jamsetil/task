@@ -1,7 +1,6 @@
 package org.example.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +18,8 @@ public class TrainingController {
 
     @PostMapping
     @Operation(summary = "add training", description = "create training session")
-    public ResponseEntity<Void> createTraining(
-            @RequestBody @Valid TrainingRequestDTO requestDTO,
-            @Parameter(description = "password", required = true) @RequestParam(name = "password") String password) {
-        trainingService.createTraining(requestDTO, password);
+    public ResponseEntity<Void> createTraining(@RequestBody @Valid TrainingRequestDTO requestDTO) {
+        trainingService.createTraining(requestDTO);
         return ResponseEntity.ok().build();
     }
 }

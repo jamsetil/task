@@ -26,6 +26,7 @@ public class User {
     @Column(nullable = false)
     String userName;
     @Column(nullable = false)
+    @ToString.Exclude
     String password;
 
     @Builder.Default

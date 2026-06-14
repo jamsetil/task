@@ -25,6 +25,18 @@ springdoc:
 username-generator:
   char: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 
+jwt:
+  secret: mySuperSecretKeyForJwtGenerationThatShouldBeLongEnough12345
+  expiration-ms: 3600000
+
+security:
+  login:
+    max-attempts: 3
+    lockout-duration-minutes: 5
+
+cors:
+  allowed-origins: "*"
+
 management:
   endpoints:
     web:

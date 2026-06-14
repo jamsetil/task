@@ -35,12 +35,11 @@ public class TrainingServiceImpl implements TrainingService {
     @Autowired
     private RequestValidator requestValidator;
 
-
     @Override
     @Transactional
-    public Training createTraining(TrainingRequestDTO requestDTO, String password) {
+    public Training createTraining(TrainingRequestDTO requestDTO) {
         requestValidator.validate(requestDTO);
-        authValidator.requireAuthentication(requestDTO.getTraineeUsername(), password);
+        authValidator.requireCurrentUser(requestDTO.getTraineeUsername());
 
         Trainee trainee = traineeRepository.findByUsername(requestDTO.getTraineeUsername())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -81,9 +80,8 @@ public class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
-    public List<Training> getAllTrainingsByTraineeUsername(String traineeUsername, String password,
-                                                           TrainingCriteria criteria) {
-        authValidator.requireAuthentication(traineeUsername, password);
+    public List<Training> getAllTrainingsByTraineeUsername(String traineeUsername, TrainingCriteria criteria) {
+        authValidator.requireCurrentUser(traineeUsername);
         if (criteria != null) {
             requestValidator.validate(criteria);
         }
@@ -92,9 +90,8 @@ public class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
-    public List<Training> getAllTrainingsByTrainerUsername(String trainerUsername, String password,
-                                                           TrainingCriteria criteria) {
-        authValidator.requireAuthentication(trainerUsername, password);
+    public List<Training> getAllTrainingsByTrainerUsername(String trainerUsername, TrainingCriteria criteria) {
+        authValidator.requireCurrentUser(trainerUsername);
         if (criteria != null) {
             requestValidator.validate(criteria);
         }

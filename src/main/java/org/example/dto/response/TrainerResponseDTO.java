@@ -20,7 +20,10 @@ public class TrainerResponseDTO {
     String firstName;
     String lastName;
     String userName;
+    @ToString.Exclude
     String password;
+    @ToString.Exclude
+    String token;
     @Builder.Default
     Boolean isActive = true;
     Long specializationId;

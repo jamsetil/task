@@ -3,8 +3,8 @@ package org.example.service.impl;
 import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.create.TraineeCreateRequestDTO;
-import org.example.exception.AuthenticationException;
 import org.example.exception.ResourceNotFoundException;
+import org.example.exception.UnauthorizedException;
 import org.example.mapper.TraineeMapperImpl;
 import org.example.mapper.TrainerMapperImpl;
 import org.example.mapper.TrainingMapperImpl;
@@ -18,6 +18,7 @@ import org.example.repository.TrainerRepository;
 import org.example.service.TrainingService;
 import org.example.util.AuthValidator;
 import org.example.util.CredentialGenerator;
+import org.example.util.JwtUtil;
 import org.example.validation.RequestValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
@@ -52,7 +54,10 @@ class TraineeServiceImplTest {
     private RequestValidator requestValidator;
     @Mock
     private TrainingService trainingService;
-
+    @Mock
+    private PasswordEncoder passwordEncoder;
+    @Mock
+    private JwtUtil jwtUtil;
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
@@ -86,6 +91,8 @@ class TraineeServiceImplTest {
 
         when(generator.generateUsername("John", "Smith")).thenReturn("john.smith");
         when(generator.generatePassword()).thenReturn("pwd1234567");
+        when(passwordEncoder.encode("pwd1234567")).thenReturn("encoded");
+        when(jwtUtil.generateToken("john.smith")).thenReturn("jwt-token");
         when(trainerRepository.findByUsername("john.smith")).thenReturn(Optional.empty());
         when(traineeRepository.save(any(Trainee.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -93,6 +100,7 @@ class TraineeServiceImplTest {
 
         assertEquals("john.smith", response.getUserName());
         assertEquals("pwd1234567", response.getPassword());
+        assertEquals("jwt-token", response.getToken());
         verify(requestValidator).validate(request);
         verify(traineeRepository).save(any(Trainee.class));
     }
@@ -127,7 +135,7 @@ class TraineeServiceImplTest {
         when(traineeRepository.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
-        var response = traineeService.updateTrainee(request, "john.smith", "pwd");
+        var response = traineeService.updateTrainee(request, "john.smith");
 
         assertEquals("New Street", response.getAddress());
         assertEquals("1996-01-01", response.getDateOfBirth());
@@ -137,16 +145,14 @@ class TraineeServiceImplTest {
     void deleteTrainee_notFound_throws() {
         when(traineeRepository.findByUsernameForDelete("missing")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class,
-                () -> traineeService.deleteTrainee("missing", "pwd"));
+        assertThrows(ResourceNotFoundException.class, () -> traineeService.deleteTrainee("missing"));
     }
 
     @Test
     void changeStatus_notFound_throws() {
         when(traineeRepository.findByUsername("missing")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class,
-                () -> traineeService.changeStatus("missing", true, "pwd"));
+        assertThrows(ResourceNotFoundException.class, () -> traineeService.changeStatus("missing", true));
     }
 
     @Test
@@ -154,7 +160,7 @@ class TraineeServiceImplTest {
         when(traineeRepository.findByUsername("missing")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
-                () -> traineeService.updateTraineeTrainers("missing", List.of("trainer1"), "pwd"));
+                () -> traineeService.updateTraineeTrainers("missing", List.of("trainer1")));
     }
 
     @Test
@@ -165,25 +171,25 @@ class TraineeServiceImplTest {
 
         when(traineeRepository.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
 
-        var response = traineeService.getTrainee("john.smith", "pwd");
+        var response = traineeService.getTrainee("john.smith");
 
         assertEquals("John", response.getFirstName());
-        verify(authValidator).requireAuthentication("john.smith", "pwd");
+        verify(authValidator).requireCurrentUser("john.smith");
     }
 
     @Test
     void getTrainee_notFound_throws() {
         when(traineeRepository.findByUsername("missing")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> traineeService.getTrainee("missing", "pwd"));
+        assertThrows(ResourceNotFoundException.class, () -> traineeService.getTrainee("missing"));
     }
 
     @Test
     void getTrainee_invalidAuth_throws() {
-        doThrow(new AuthenticationException("Invalid username or password"))
-                .when(authValidator).requireAuthentication("john.smith", "bad");
+        doThrow(new UnauthorizedException("Access denied"))
+                .when(authValidator).requireCurrentUser("john.smith");
 
-        assertThrows(AuthenticationException.class, () -> traineeService.getTrainee("john.smith", "bad"));
+        assertThrows(UnauthorizedException.class, () -> traineeService.getTrainee("john.smith"));
         verify(traineeRepository, never()).findByUsername(any());
     }
 
@@ -200,10 +206,10 @@ class TraineeServiceImplTest {
         when(traineeRepository.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
-        var response = traineeService.updateTrainee(request, "john.smith", "pwd");
+        var response = traineeService.updateTrainee(request, "john.smith");
 
         assertEquals("Johnny", response.getFirstName());
-        verify(authValidator).requireAuthentication("john.smith", "pwd");
+        verify(authValidator).requireCurrentUser("john.smith");
     }
 
     @Test
@@ -212,9 +218,9 @@ class TraineeServiceImplTest {
                 LocalDate.of(1995, 5, 20), "Street 1", List.of());
         when(traineeRepository.findByUsernameForDelete("john.smith")).thenReturn(Optional.of(trainee));
 
-        traineeService.deleteTrainee("john.smith", "pwd");
+        traineeService.deleteTrainee("john.smith");
 
-        verify(authValidator).requireAuthentication("john.smith", "pwd");
+        verify(authValidator).requireCurrentUser("john.smith");
         verify(traineeRepository).delete(trainee);
     }
 
@@ -225,10 +231,10 @@ class TraineeServiceImplTest {
         when(traineeRepository.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
-        var result = traineeService.changeStatus("john.smith", false, "pwd");
+        var result = traineeService.changeStatus("john.smith", false);
 
         assertSame(trainee, result);
-        verify(authValidator).requireAuthentication("john.smith", "pwd");
+        verify(authValidator).requireCurrentUser("john.smith");
     }
 
     @Test
@@ -241,10 +247,10 @@ class TraineeServiceImplTest {
         when(trainerRepository.findByUserUserNameIn(List.of("trainer1"))).thenReturn(List.of(trainer));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
-        var response = traineeService.updateTraineeTrainers("john.smith", List.of("trainer1"), "pwd");
+        var response = traineeService.updateTraineeTrainers("john.smith", List.of("trainer1"));
 
         assertEquals(1, response.getTrainerList().size());
-        verify(authValidator).requireAuthentication("john.smith", "pwd");
+        verify(authValidator).requireCurrentUser("john.smith");
     }
 
     @Test
@@ -252,11 +258,11 @@ class TraineeServiceImplTest {
         var trainer = trainer("trainer1", "Ann", "Lee", 3L);
         when(trainerRepository.findActiveNotAssignedToTrainee("john.smith")).thenReturn(List.of(trainer));
 
-        var result = traineeService.getUnassignedTrainers("john.smith", "pwd");
+        var result = traineeService.getUnassignedTrainers("john.smith");
 
         assertEquals(1, result.size());
         assertEquals("trainer1", result.get(0).getUserName());
-        verify(authValidator).requireAuthentication("john.smith", "pwd");
+        verify(authValidator).requireCurrentUser("john.smith");
     }
 
     @Test
@@ -271,10 +277,10 @@ class TraineeServiceImplTest {
                 .trainingType(TrainingType.builder().trainingTypeName("Fitness").build())
                 .build();
 
-        when(trainingService.getAllTrainingsByTraineeUsername(eq("john.smith"), eq("pwd"), any(TrainingCriteria.class)))
+        when(trainingService.getAllTrainingsByTraineeUsername(eq("john.smith"), any(TrainingCriteria.class)))
                 .thenReturn(List.of(training));
 
-        var response = traineeService.getTraineeTrainings("john.smith", "pwd", null, null, null, null);
+        var response = traineeService.getTraineeTrainings("john.smith", null, null, null, null);
 
         assertEquals(1, response.getTrainings().size());
         assertEquals("Cardio", response.getTrainings().get(0).getTrainingName());
@@ -290,7 +296,7 @@ class TraineeServiceImplTest {
                 .build();
 
         assertThrows(ResourceNotFoundException.class,
-                () -> traineeService.updateTrainee(request, "missing", "pwd"));
+                () -> traineeService.updateTrainee(request, "missing"));
     }
 
     private static Trainee trainee(String username, String firstName, String lastName, boolean isActive,

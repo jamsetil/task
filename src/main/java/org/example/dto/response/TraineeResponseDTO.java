@@ -21,7 +21,10 @@ public class TraineeResponseDTO {
     Boolean isActive;
     String userId;
     String userName;
+    @ToString.Exclude
     String password;
+    @ToString.Exclude
+    String token;
     String dateOfBirth;
     String address;
     String trainerName;

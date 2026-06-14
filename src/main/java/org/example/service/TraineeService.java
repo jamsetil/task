@@ -12,18 +12,18 @@ import java.util.List;
 public interface TraineeService {
     TraineeResponseDTO createTrainee(TraineeCreateRequestDTO trainee);
 
-    TraineeResponseDTO updateTrainee(TraineeRequestDTO requestDTO, String username, String password);
+    TraineeResponseDTO updateTrainee(TraineeRequestDTO requestDTO, String username);
 
-    void deleteTrainee(String username, String password);
+    void deleteTrainee(String username);
 
-    TraineeResponseDTO getTrainee(String username, String password);
+    TraineeResponseDTO getTrainee(String username);
 
-    Trainee changeStatus(String username, boolean isActive, String password);
+    Trainee changeStatus(String username, boolean isActive);
 
-    TraineeResponseDTO updateTraineeTrainers(String username, List<String> trainerUsernames, String password);
+    TraineeResponseDTO updateTraineeTrainers(String username, List<String> trainerUsernames);
 
-    List<TrainerResponseDTO> getUnassignedTrainers(String traineeUsername, String password);
+    List<TrainerResponseDTO> getUnassignedTrainers(String traineeUsername);
 
-    TraineeResponseDTO getTraineeTrainings(String username, String password, LocalDate fromDate, LocalDate toDate,
+    TraineeResponseDTO getTraineeTrainings(String username, LocalDate fromDate, LocalDate toDate,
                                            String trainerName, String trainingType);
 }

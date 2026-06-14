@@ -7,11 +7,9 @@ import org.example.model.Training;
 import java.util.List;
 
 public interface TrainingService {
-    Training createTraining(TrainingRequestDTO request, String password);
+    Training createTraining(TrainingRequestDTO request);
 
-    List<Training> getAllTrainingsByTraineeUsername(String traineeUsername, String password,
-                                                      TrainingCriteria criteria);
+    List<Training> getAllTrainingsByTraineeUsername(String traineeUsername, TrainingCriteria criteria);
 
-    List<Training> getAllTrainingsByTrainerUsername(String trainerUsername, String password,
-                                                    TrainingCriteria criteria);
+    List<Training> getAllTrainingsByTrainerUsername(String trainerUsername, TrainingCriteria criteria);
 }

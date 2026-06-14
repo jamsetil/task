@@ -4,21 +4,21 @@ import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TrainerRequestDTO;
 import org.example.dto.request.create.TrainerCreateRequestDTO;
 import org.example.dto.response.TrainerResponseDTO;
-import org.example.exception.AuthenticationException;
 import org.example.exception.ResourceNotFoundException;
+import org.example.exception.UnauthorizedException;
 import org.example.mapper.TrainerMapper;
 import org.example.mapper.TrainingMapperImpl;
 import org.example.model.Trainer;
 import org.example.model.Training;
 import org.example.model.TrainingType;
 import org.example.model.base.User;
-
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingTypeRepository;
 import org.example.service.TrainingService;
 import org.example.util.AuthValidator;
 import org.example.util.CredentialGenerator;
+import org.example.util.JwtUtil;
 import org.example.validation.RequestValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
@@ -56,6 +57,10 @@ class TrainerServiceImplTest {
     private TrainerMapper trainerMapper;
     @Mock
     private RequestValidator requestValidator;
+    @Mock
+    private PasswordEncoder passwordEncoder;
+    @Mock
+    private JwtUtil jwtUtil;
 
     @InjectMocks
     private TrainerServiceImpl trainerService;
@@ -77,6 +82,8 @@ class TrainerServiceImplTest {
 
         when(generator.generateUsername("Ilyas", "Azizzade")).thenReturn("ilyas.azizzade");
         when(generator.generatePassword()).thenReturn("secret1234");
+        when(passwordEncoder.encode("secret1234")).thenReturn("encoded");
+        when(jwtUtil.generateToken("ilyas.azizzade")).thenReturn("jwt-token");
         when(traineeRepository.findByUsername("ilyas.azizzade")).thenReturn(Optional.empty());
         when(trainingTypeRepository.findByTrainingTypeName("Body Building"))
                 .thenReturn(Optional.of(TrainingType.builder().trainingTypeName("Body Building").build()));
@@ -85,8 +92,8 @@ class TrainerServiceImplTest {
         var response = trainerService.createTrainer(request);
 
         assertEquals("ilyas.azizzade", response.getUserName());
+        assertEquals("jwt-token", response.getToken());
         verify(requestValidator).validate(request);
-
     }
 
     @Test
@@ -111,8 +118,7 @@ class TrainerServiceImplTest {
     void getTrainer_notFound_throws() {
         when(trainerRepository.findByUsername("missing")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class,
-                () -> trainerService.getTrainer("missing", "pwd"));
+        assertThrows(ResourceNotFoundException.class, () -> trainerService.getTrainer("missing"));
     }
 
     @Test
@@ -120,7 +126,7 @@ class TrainerServiceImplTest {
         when(trainerRepository.findByUsername("missing")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
-                () -> trainerService.toggleTrainerStatus("missing", true, "pwd"));
+                () -> trainerService.toggleTrainerStatus("missing", true));
     }
 
     @Test
@@ -147,10 +153,10 @@ class TrainerServiceImplTest {
         when(trainerRepository.findByUsername("ilyas.azizzade")).thenReturn(Optional.of(trainer));
         when(trainerMapper.toResponseDTO(trainer)).thenReturn(dto);
 
-        var response = trainerService.getTrainer("ilyas.azizzade", "pwd");
+        var response = trainerService.getTrainer("ilyas.azizzade");
 
         assertEquals("ilyas.azizzade", response.getUserName());
-        verify(authValidator).requireAuthentication("ilyas.azizzade", "pwd");
+        verify(authValidator).requireCurrentUser("ilyas.azizzade");
     }
 
     @Test
@@ -166,10 +172,10 @@ class TrainerServiceImplTest {
         when(trainerRepository.findByUsername("ilyas.azizzade")).thenReturn(Optional.of(trainer));
         when(trainerMapper.toResponseDTO(trainer)).thenReturn(dto);
 
-        var response = trainerService.updateTrainer(request, "ilyas.azizzade", "pwd");
+        var response = trainerService.updateTrainer(request, "ilyas.azizzade");
 
         assertEquals("Updated", response.getLastName());
-        verify(authValidator).requireAuthentication("ilyas.azizzade", "pwd");
+        verify(authValidator).requireCurrentUser("ilyas.azizzade");
     }
 
     @Test
@@ -178,10 +184,10 @@ class TrainerServiceImplTest {
         when(trainerRepository.findByUsername("ilyas.azizzade")).thenReturn(Optional.of(trainer));
         when(trainerRepository.save(trainer)).thenReturn(trainer);
 
-        var result = trainerService.toggleTrainerStatus("ilyas.azizzade", false, "pwd");
+        var result = trainerService.toggleTrainerStatus("ilyas.azizzade", false);
 
         assertSame(trainer, result);
-        verify(authValidator).requireAuthentication("ilyas.azizzade", "pwd");
+        verify(authValidator).requireCurrentUser("ilyas.azizzade");
     }
 
     @Test
@@ -195,20 +201,20 @@ class TrainerServiceImplTest {
                         .user(User.builder().firstName("John").lastName("Smith").build())
                         .build())
                 .build();
-        when(trainingService.getAllTrainingsByTrainerUsername(eq("ilyas.azizzade"), eq("pwd"), any(TrainingCriteria.class)))
+        when(trainingService.getAllTrainingsByTrainerUsername(eq("ilyas.azizzade"), any(TrainingCriteria.class)))
                 .thenReturn(List.of(training));
 
-        var response = trainerService.getTrainerTrainings("ilyas.azizzade", "pwd", null, null, null);
+        var response = trainerService.getTrainerTrainings("ilyas.azizzade", null, null, null);
 
         assertEquals(1, response.getTrainingResponseDTOList().size());
     }
 
     @Test
     void getTrainer_invalidAuth_throws() {
-        doThrow(new AuthenticationException("Invalid username or password"))
-                .when(authValidator).requireAuthentication("ilyas.azizzade", "bad");
+        doThrow(new UnauthorizedException("Access denied"))
+                .when(authValidator).requireCurrentUser("ilyas.azizzade");
 
-        assertThrows(AuthenticationException.class, () -> trainerService.getTrainer("ilyas.azizzade", "bad"));
+        assertThrows(UnauthorizedException.class, () -> trainerService.getTrainer("ilyas.azizzade"));
     }
 
     @Test
@@ -221,7 +227,7 @@ class TrainerServiceImplTest {
                 .build();
 
         assertThrows(ResourceNotFoundException.class,
-                () -> trainerService.updateTrainer(request, "missing", "pwd"));
+                () -> trainerService.updateTrainer(request, "missing"));
     }
 
     private static Trainer trainer(String username, String firstName, String lastName, boolean isActive) {

@@ -17,8 +17,10 @@ import org.example.service.TrainerService;
 import org.example.service.TrainingService;
 import org.example.util.AuthValidator;
 import org.example.util.CredentialGenerator;
+import org.example.util.JwtUtil;
 import org.example.validation.RequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +50,10 @@ public class TrainerServiceImpl implements TrainerService {
     private TrainingMapper trainingMapper;
     @Autowired
     private RequestValidator requestValidator;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Override
     @Transactional
@@ -66,7 +72,7 @@ public class TrainerServiceImpl implements TrainerService {
                 .firstName(requestDTO.getFirstName())
                 .lastName(requestDTO.getLastName())
                 .userName(username)
-                .password(password)
+                .password(passwordEncoder.encode(password))
                 .build();
 
         var specialization = trainingTypeRepository.findByTrainingTypeName(requestDTO.getSpecializationName())
@@ -85,14 +91,15 @@ public class TrainerServiceImpl implements TrainerService {
         return TrainerResponseDTO.builder()
                 .userName(username)
                 .password(password)
+                .token(jwtUtil.generateToken(username))
                 .build();
     }
 
     @Override
     @Transactional
-    public TrainerResponseDTO updateTrainer(TrainerRequestDTO requestDTO, String username, String password) {
+    public TrainerResponseDTO updateTrainer(TrainerRequestDTO requestDTO, String username) {
         requestValidator.validate(requestDTO);
-        authValidator.requireAuthentication(username, password);
+        authValidator.requireCurrentUser(username);
 
         log.info("Updating trainer with username={}", username);
 
@@ -110,8 +117,8 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
-    public TrainerResponseDTO getTrainer(String username, String password) {
-        authValidator.requireAuthentication(username, password);
+    public TrainerResponseDTO getTrainer(String username) {
+        authValidator.requireCurrentUser(username);
         log.debug("Fetching trainer with username={}", username);
         Trainer trainer = trainerRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Trainer not found with username: " + username));
@@ -121,8 +128,8 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     @Transactional
-    public Trainer toggleTrainerStatus(String username, boolean isActive, String password) {
-        authValidator.requireAuthentication(username, password);
+    public Trainer toggleTrainerStatus(String username, boolean isActive) {
+        authValidator.requireCurrentUser(username);
         log.info("Toggling trainer active status, username={} isActive={}", username, isActive);
         Trainer trainer = trainerRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Trainer not found with username: " + username));
@@ -131,8 +138,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
-    public TrainerResponseDTO getTrainerTrainings(String username, String password,
-                                                  LocalDate fromDate, LocalDate toDate,
+    public TrainerResponseDTO getTrainerTrainings(String username, LocalDate fromDate, LocalDate toDate,
                                                   String traineeName) {
         TrainingCriteria criteria = TrainingCriteria.builder()
                 .fromDate(fromDate)
@@ -141,7 +147,7 @@ public class TrainerServiceImpl implements TrainerService {
                 .build();
 
         List<org.example.model.Training> trainings =
-                trainingService.getAllTrainingsByTrainerUsername(username, password, criteria);
+                trainingService.getAllTrainingsByTrainerUsername(username, criteria);
 
         return TrainerResponseDTO.builder()
                 .trainingResponseDTOList(trainings.stream()

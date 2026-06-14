@@ -5,7 +5,6 @@ import org.example.dto.response.TrainingTypeResponseDTO;
 import org.example.mapper.TrainingTypeMapper;
 import org.example.repository.TrainingTypeRepository;
 import org.example.service.TrainingTypeService;
-import org.example.util.AuthValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,13 +20,10 @@ public class TrainingTypeServiceImpl implements TrainingTypeService {
     private TrainingTypeRepository trainingTypeRepository;
     @Autowired
     private TrainingTypeMapper trainingTypeMapper;
-    @Autowired
-    private AuthValidator authValidator;
 
     @Override
-    public List<TrainingTypeResponseDTO> getTrainingTypes(String username, String password) {
-        authValidator.requireAuthentication(username, password);
-        log.debug("Fetching all training types for username={}", username);
+    public List<TrainingTypeResponseDTO> getTrainingTypes() {
+        log.debug("Fetching all training types");
         return trainingTypeRepository.findAll().stream()
                 .map(trainingTypeMapper::toResponseDTO)
                 .toList();

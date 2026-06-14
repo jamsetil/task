@@ -11,13 +11,10 @@ import lombok.ToString;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChangeLoginRequestDTO {
+public class LoginRequestDTO {
     @NotBlank
     private String username;
     @NotBlank
     @ToString.Exclude
-    private String oldPassword;
-    @NotBlank
-    @ToString.Exclude
-    private String newPassword;
+    private String password;
 }

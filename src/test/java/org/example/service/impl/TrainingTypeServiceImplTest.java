@@ -1,9 +1,7 @@
 package org.example.service.impl;
 
-import org.example.exception.AuthenticationException;
 import org.example.model.TrainingType;
 import org.example.repository.TrainingTypeRepository;
-import org.example.util.AuthValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,16 +12,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TrainingTypeServiceImplTest {
 
     @Mock
     private TrainingTypeRepository trainingTypeRepository;
-    @Mock
-    private AuthValidator authValidator;
 
     @InjectMocks
     private TrainingTypeServiceImpl trainingTypeService;
@@ -42,21 +37,10 @@ class TrainingTypeServiceImplTest {
                 TrainingType.builder().trainingTypeId(2L).trainingTypeName("Cardio").build()
         ));
 
-        var result = trainingTypeService.getTrainingTypes("john", "pwd");
+        var result = trainingTypeService.getTrainingTypes();
 
         assertEquals(2, result.size());
         assertEquals("1", result.get(0).getTrainingTypeId());
         assertEquals("Yoga", result.get(0).getTrainingType());
-        verify(authValidator).requireAuthentication("john", "pwd");
-    }
-
-    @Test
-    void getTrainingTypes_invalidAuth_throws() {
-        doThrow(new AuthenticationException("Invalid username or password"))
-                .when(authValidator).requireAuthentication("john", "bad");
-
-        assertThrows(AuthenticationException.class,
-                () -> trainingTypeService.getTrainingTypes("john", "bad"));
-        verify(trainingTypeRepository, never()).findAll();
     }
 }
