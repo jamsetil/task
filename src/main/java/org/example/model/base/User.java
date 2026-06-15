@@ -31,5 +31,5 @@ public class User {
 
     @Builder.Default
     @Column(nullable = false)
-    Boolean isActive= true;
+    Boolean isActive = true;
 }

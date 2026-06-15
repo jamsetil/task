@@ -11,7 +11,6 @@ import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingRepository;
 import org.example.service.TrainingService;
-import org.example.util.AuthValidator;
 import org.example.validation.RequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,15 +30,12 @@ public class TrainingServiceImpl implements TrainingService {
     @Autowired
     private TrainerRepository trainerRepository;
     @Autowired
-    private AuthValidator authValidator;
-    @Autowired
     private RequestValidator requestValidator;
 
     @Override
     @Transactional
     public Training createTraining(TrainingRequestDTO requestDTO) {
         requestValidator.validate(requestDTO);
-        authValidator.requireCurrentUser(requestDTO.getTraineeUsername());
 
         Trainee trainee = traineeRepository.findByUsername(requestDTO.getTraineeUsername())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -81,7 +77,6 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     public List<Training> getAllTrainingsByTraineeUsername(String traineeUsername, TrainingCriteria criteria) {
-        authValidator.requireCurrentUser(traineeUsername);
         if (criteria != null) {
             requestValidator.validate(criteria);
         }
@@ -91,7 +86,6 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     public List<Training> getAllTrainingsByTrainerUsername(String trainerUsername, TrainingCriteria criteria) {
-        authValidator.requireCurrentUser(trainerUsername);
         if (criteria != null) {
             requestValidator.validate(criteria);
         }

@@ -5,7 +5,6 @@ import org.example.dto.request.TrainerRequestDTO;
 import org.example.dto.request.create.TrainerCreateRequestDTO;
 import org.example.dto.response.TrainerResponseDTO;
 import org.example.exception.ResourceNotFoundException;
-import org.example.exception.UnauthorizedException;
 import org.example.mapper.TrainerMapper;
 import org.example.mapper.TrainingMapperImpl;
 import org.example.model.Trainer;
@@ -16,7 +15,6 @@ import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingTypeRepository;
 import org.example.service.TrainingService;
-import org.example.util.AuthValidator;
 import org.example.util.CredentialGenerator;
 import org.example.util.JwtUtil;
 import org.example.validation.RequestValidator;
@@ -49,8 +47,6 @@ class TrainerServiceImplTest {
     private TrainingTypeRepository trainingTypeRepository;
     @Mock
     private CredentialGenerator generator;
-    @Mock
-    private AuthValidator authValidator;
     @Mock
     private TrainingService trainingService;
     @Mock
@@ -156,7 +152,6 @@ class TrainerServiceImplTest {
         var response = trainerService.getTrainer("ilyas.azizzade");
 
         assertEquals("ilyas.azizzade", response.getUserName());
-        verify(authValidator).requireCurrentUser("ilyas.azizzade");
     }
 
     @Test
@@ -175,7 +170,6 @@ class TrainerServiceImplTest {
         var response = trainerService.updateTrainer(request, "ilyas.azizzade");
 
         assertEquals("Updated", response.getLastName());
-        verify(authValidator).requireCurrentUser("ilyas.azizzade");
     }
 
     @Test
@@ -187,7 +181,6 @@ class TrainerServiceImplTest {
         var result = trainerService.toggleTrainerStatus("ilyas.azizzade", false);
 
         assertSame(trainer, result);
-        verify(authValidator).requireCurrentUser("ilyas.azizzade");
     }
 
     @Test
@@ -207,14 +200,6 @@ class TrainerServiceImplTest {
         var response = trainerService.getTrainerTrainings("ilyas.azizzade", null, null, null);
 
         assertEquals(1, response.getTrainingResponseDTOList().size());
-    }
-
-    @Test
-    void getTrainer_invalidAuth_throws() {
-        doThrow(new UnauthorizedException("Access denied"))
-                .when(authValidator).requireCurrentUser("ilyas.azizzade");
-
-        assertThrows(UnauthorizedException.class, () -> trainerService.getTrainer("ilyas.azizzade"));
     }
 
     @Test

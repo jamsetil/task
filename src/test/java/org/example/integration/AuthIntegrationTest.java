@@ -75,7 +75,7 @@ class AuthIntegrationTest {
 
         mockMvc.perform(get("/trainees/{username}", user.username()))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Unauthorized"));
+                .andExpect(jsonPath("$.message").value("Hi Evgeniy please log in to access this resource"));
     }
 
     @Test
@@ -85,7 +85,7 @@ class AuthIntegrationTest {
         mockMvc.perform(get("/trainees/{username}", user.username())
                         .header("Authorization", "Bearer invalid.jwt.token"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Unauthorized"));
+                .andExpect(jsonPath("$.message").value("Hi Evgeniy please log in to access this resource"));
     }
 
     @Test

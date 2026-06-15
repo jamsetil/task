@@ -32,6 +32,15 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleLockedException_returnsUnauthorized() {
+        var response = handler.handleLockedException(
+                new org.springframework.security.authentication.LockedException("Account is locked. Try again in 5 minutes."));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertEquals("Account is locked. Try again in 5 minutes.", response.getBody().get("message"));
+    }
+
+    @Test
     void handleUnauthorizedException_returnsUnauthorized() {
         var response = handler.handleUnauthorizedException(new UnauthorizedException("Access denied"));
 

@@ -18,7 +18,6 @@ import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.service.TraineeService;
 import org.example.service.TrainingService;
-import org.example.util.AuthValidator;
 import org.example.util.CredentialGenerator;
 import org.example.util.JwtUtil;
 import org.example.validation.RequestValidator;
@@ -41,8 +40,6 @@ public class TraineeServiceImpl implements TraineeService {
     private TrainerRepository trainerRepository;
     @Autowired
     private CredentialGenerator generator;
-    @Autowired
-    private AuthValidator authValidator;
     @Autowired
     private RequestValidator requestValidator;
     @Autowired
@@ -98,7 +95,6 @@ public class TraineeServiceImpl implements TraineeService {
     @Transactional
     public TraineeResponseDTO updateTrainee(TraineeRequestDTO requestDTO, String username) {
         requestValidator.validate(requestDTO);
-        authValidator.requireCurrentUser(username);
         Trainee trainee = traineeRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Trainee not found with username: " + username));
@@ -126,7 +122,6 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     @Transactional
     public void deleteTrainee(String username) {
-        authValidator.requireCurrentUser(username);
         log.warn("Deleting trainee with username={}", username);
         Trainee trainee = traineeRepository.findByUsernameForDelete(username)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -138,7 +133,6 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     public TraineeResponseDTO getTrainee(String username) {
-        authValidator.requireCurrentUser(username);
         log.debug("Fetching trainee with username={}", username);
 
         Trainee trainee = traineeRepository.findByUsername(username)
@@ -151,7 +145,6 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     @Transactional
     public Trainee changeStatus(String username, boolean isActive) {
-        authValidator.requireCurrentUser(username);
         log.info("Toggling trainee active status, username={} isActive={}", username, isActive);
         Trainee trainee = traineeRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -163,7 +156,6 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     @Transactional
     public TraineeResponseDTO updateTraineeTrainers(String username, List<String> trainerUsernames) {
-        authValidator.requireCurrentUser(username);
         requestValidator.validate(TraineeTrainersUpdateRequestDTO.builder()
                 .trainerUsernames(trainerUsernames)
                 .build());
@@ -182,7 +174,6 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     public List<TrainerResponseDTO> getUnassignedTrainers(String traineeUsername) {
-        authValidator.requireCurrentUser(traineeUsername);
         log.debug("Fetching unassigned active trainers for trainee username={}", traineeUsername);
         return trainerRepository.findActiveNotAssignedToTrainee(traineeUsername).stream()
                 .map(trainerMapper::toResponseDTO)

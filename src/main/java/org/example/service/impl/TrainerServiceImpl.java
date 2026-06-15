@@ -15,7 +15,6 @@ import org.example.repository.TrainerRepository;
 import org.example.repository.TrainingTypeRepository;
 import org.example.service.TrainerService;
 import org.example.service.TrainingService;
-import org.example.util.AuthValidator;
 import org.example.util.CredentialGenerator;
 import org.example.util.JwtUtil;
 import org.example.validation.RequestValidator;
@@ -40,8 +39,6 @@ public class TrainerServiceImpl implements TrainerService {
     private TrainingTypeRepository trainingTypeRepository;
     @Autowired
     private CredentialGenerator generator;
-    @Autowired
-    private AuthValidator authValidator;
     @Autowired
     private TrainingService trainingService;
     @Autowired
@@ -99,7 +96,6 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional
     public TrainerResponseDTO updateTrainer(TrainerRequestDTO requestDTO, String username) {
         requestValidator.validate(requestDTO);
-        authValidator.requireCurrentUser(username);
 
         log.info("Updating trainer with username={}", username);
 
@@ -118,7 +114,6 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public TrainerResponseDTO getTrainer(String username) {
-        authValidator.requireCurrentUser(username);
         log.debug("Fetching trainer with username={}", username);
         Trainer trainer = trainerRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Trainer not found with username: " + username));
@@ -129,7 +124,6 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     @Transactional
     public Trainer toggleTrainerStatus(String username, boolean isActive) {
-        authValidator.requireCurrentUser(username);
         log.info("Toggling trainer active status, username={} isActive={}", username, isActive);
         Trainer trainer = trainerRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Trainer not found with username: " + username));

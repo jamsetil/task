@@ -1,8 +1,6 @@
 package org.example.filter;
 
 import jakarta.servlet.FilterChain;
-import org.example.model.base.User;
-import org.example.repository.UserRepository;
 import org.example.util.JwtUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,9 +11,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
-import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -28,7 +29,7 @@ class JwtAuthFilterTest {
     @Mock
     private JwtUtil jwtUtil;
     @Mock
-    private UserRepository userRepository;
+    private UserDetailsService userDetailsService;
     @Mock
     private FilterChain filterChain;
 
@@ -46,11 +47,15 @@ class JwtAuthFilterTest {
         var request = new MockHttpServletRequest();
         var response = new MockHttpServletResponse();
         request.addHeader("Authorization", "Bearer valid-token");
+        var userDetails = User.builder()
+                .username("john")
+                .password("encoded")
+                .authorities(List.of(new SimpleGrantedAuthority("ROLE_TRAINEE")))
+                .build();
 
         when(jwtUtil.extractUsername("valid-token")).thenReturn("john");
-        when(userRepository.findByUserName("john")).thenReturn(Optional.of(
-                User.builder().userName("john").build()));
         when(jwtUtil.validateToken("valid-token", "john")).thenReturn(true);
+        when(userDetailsService.loadUserByUsername("john")).thenReturn(userDetails);
 
         jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
