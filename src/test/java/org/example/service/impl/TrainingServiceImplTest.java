@@ -1,5 +1,6 @@
 package org.example.service.impl;
 
+import org.example.client.WorkloadClient;
 import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TrainingRequestDTO;
 import org.example.exception.ResourceNotFoundException;
@@ -25,6 +26,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +43,8 @@ class TrainingServiceImplTest {
     private TrainerRepository trainerRepository;
     @Mock
     private RequestValidator requestValidator;
+    @Mock
+    private WorkloadClient workloadClient;
 
     @InjectMocks
     private TrainingServiceImpl trainingService;
@@ -62,12 +66,13 @@ class TrainingServiceImplTest {
         when(trainingRepository.save(any(Training.class))).thenReturn(saved);
 
         var captor = ArgumentCaptor.forClass(Training.class);
-        var result = trainingService.createTraining(request);
+        var result = trainingService.createTraining(request, "Bearer token");
 
         assertEquals("id-1", result.getTrainingId());
         verify(trainingRepository).save(captor.capture());
         assertEquals(specialization, captor.getValue().getTrainingType());
         verify(requestValidator).validate(request);
+        verify(workloadClient).updateTrainerWorkload(eq("Bearer token"), any());
     }
 
     @Test
@@ -76,7 +81,7 @@ class TrainingServiceImplTest {
 
         when(traineeRepository.findByUsername(TRAINEE_USERNAME)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(request));
+        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(request, "Bearer token"));
     }
 
     @Test
@@ -86,7 +91,7 @@ class TrainingServiceImplTest {
         when(traineeRepository.findByUsername(TRAINEE_USERNAME)).thenReturn(Optional.of(activeTrainee("Faiq", "Azizzade")));
         when(trainerRepository.findByUsername(TRAINER_USERNAME)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(request));
+        assertThrows(ResourceNotFoundException.class, () -> trainingService.createTraining(request, "Bearer token"));
     }
 
     @Test
@@ -100,7 +105,7 @@ class TrainingServiceImplTest {
         when(trainerRepository.findByUsername(TRAINER_USERNAME)).thenReturn(Optional.of(
                 activeTrainer("Ilyas", "Azizzade", null)));
 
-        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request));
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request, "Bearer token"));
     }
 
     @Test
@@ -113,7 +118,7 @@ class TrainingServiceImplTest {
                         .user(User.builder().firstName("Ilyas").lastName("Azizzade").isActive(false).build())
                         .build()));
 
-        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request));
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request, "Bearer token"));
     }
 
     @Test
@@ -124,7 +129,7 @@ class TrainingServiceImplTest {
         when(trainerRepository.findByUsername(TRAINER_USERNAME)).thenReturn(Optional.of(
                 activeTrainer("Ilyas", "Azizzade", null)));
 
-        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request));
+        assertThrows(IllegalStateException.class, () -> trainingService.createTraining(request, "Bearer token"));
     }
 
     @Test

@@ -1,8 +1,10 @@
 package org.example.service.impl;
 
+import org.example.client.WorkloadClient;
 import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.create.TraineeCreateRequestDTO;
+import org.example.enums.ActionType;
 import org.example.exception.ResourceNotFoundException;
 import org.example.mapper.TraineeMapperImpl;
 import org.example.mapper.TrainerMapperImpl;
@@ -34,6 +36,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -54,6 +57,8 @@ class TraineeServiceImplTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private JwtUtil jwtUtil;
+    @Mock
+    private WorkloadClient workloadClient;
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
@@ -141,7 +146,7 @@ class TraineeServiceImplTest {
     void deleteTrainee_notFound_throws() {
         when(traineeRepository.findByUsernameForDelete("missing")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> traineeService.deleteTrainee("missing"));
+        assertThrows(ResourceNotFoundException.class, () -> traineeService.deleteTrainee("missing", "Bearer token"));
     }
 
     @Test
@@ -198,13 +203,25 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    void deleteTrainee_deletesEntity() {
+    void deleteTrainee_deletesEntityAndNotifiesWorkloadService() {
+        var trainer = trainer("trainer1", "Ann", "Lee", 3L);
+        var training = Training.builder()
+                .trainingDate(LocalDate.of(2024, 6, 1))
+                .trainingDuration(60)
+                .trainer(trainer)
+                .build();
         var trainee = trainee("john.smith", "John", "Smith", true,
                 LocalDate.of(1995, 5, 20), "Street 1", List.of());
+        trainee.setTrainings(new ArrayList<>(List.of(training)));
+
         when(traineeRepository.findByUsernameForDelete("john.smith")).thenReturn(Optional.of(trainee));
 
-        traineeService.deleteTrainee("john.smith");
+        traineeService.deleteTrainee("john.smith", "Bearer token");
 
+        verify(workloadClient).deleteTrainerWorkload(eq("Bearer token"), argThat(request ->
+                ActionType.DELETE.equals(request.getActionType())
+                        && "trainer1".equals(request.getTrainerUsername())
+                        && Integer.valueOf(60).equals(request.getTrainingDuration())));
         verify(traineeRepository).delete(trainee);
     }
 

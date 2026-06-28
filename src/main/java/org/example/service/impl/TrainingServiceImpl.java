@@ -1,8 +1,11 @@
 package org.example.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.client.WorkloadClient;
 import org.example.dto.TrainingCriteria;
+import org.example.dto.request.TrainerWorkloadRequest;
 import org.example.dto.request.TrainingRequestDTO;
+import org.example.enums.ActionType;
 import org.example.exception.ResourceNotFoundException;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
@@ -31,10 +34,12 @@ public class TrainingServiceImpl implements TrainingService {
     private TrainerRepository trainerRepository;
     @Autowired
     private RequestValidator requestValidator;
+    @Autowired
+    private WorkloadClient workloadClient;
 
     @Override
     @Transactional
-    public Training createTraining(TrainingRequestDTO requestDTO) {
+    public Training createTraining(TrainingRequestDTO requestDTO, String header) {
         requestValidator.validate(requestDTO);
 
         Trainee trainee = traineeRepository.findByUsername(requestDTO.getTraineeUsername())
@@ -70,6 +75,17 @@ public class TrainingServiceImpl implements TrainingService {
                 .build();
 
         training = trainingRepository.save(training);
+
+        workloadClient.updateTrainerWorkload(header,TrainerWorkloadRequest.builder()
+                .actionType(ActionType.ADD)
+                .isActive(trainer.getUser().getIsActive())
+                .trainingDate(requestDTO.getTrainingDate())
+                .trainingDuration(requestDTO.getTrainingDuration())
+                .trainerLastName(trainer.getUser().getLastName())
+                .trainerFirstName(trainer.getUser().getFirstName())
+                .trainerUsername(trainer.getUser().getUserName())
+                .build());
+
 
         log.info("Training created successfully with trainingId={}", training.getTrainingId());
         return training;

@@ -14,7 +14,7 @@ public interface TraineeService {
 
     TraineeResponseDTO updateTrainee(TraineeRequestDTO requestDTO, String username);
 
-    void deleteTrainee(String username);
+    void deleteTrainee(String username, String authorizationHeader);
 
     TraineeResponseDTO getTrainee(String username);
 

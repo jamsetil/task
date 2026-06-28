@@ -1,17 +1,21 @@
 package org.example.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.client.WorkloadClient;
 import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.TraineeTrainersUpdateRequestDTO;
+import org.example.dto.request.TrainerWorkloadRequest;
 import org.example.dto.request.create.TraineeCreateRequestDTO;
 import org.example.dto.response.TraineeResponseDTO;
 import org.example.dto.response.TrainerResponseDTO;
+import org.example.enums.ActionType;
 import org.example.exception.ResourceNotFoundException;
 import org.example.mapper.TraineeMapper;
 import org.example.mapper.TrainerMapper;
 import org.example.mapper.TrainingMapper;
 import org.example.model.Trainee;
+import org.example.model.Training;
 import org.example.model.Trainer;
 import org.example.model.base.User;
 import org.example.repository.TraineeRepository;
@@ -54,6 +58,8 @@ public class TraineeServiceImpl implements TraineeService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private WorkloadClient workloadClient;
 
     @Override
     @Transactional
@@ -121,14 +127,35 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public void deleteTrainee(String username) {
+    public void deleteTrainee(String username, String authorizationHeader) {
         log.warn("Deleting trainee with username={}", username);
         Trainee trainee = traineeRepository.findByUsernameForDelete(username)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Trainee not found with username: " + username));
+
+        if (trainee.getTrainings() != null) {
+            trainee.getTrainings().forEach(training ->
+                    workloadClient.deleteTrainerWorkload(
+                            authorizationHeader, toWorkloadDeleteRequest(training)));
+        }
+
         trainee.getTrainers().clear();
         traineeRepository.delete(trainee);
         log.info("Trainee deleted successfully, username={}", username);
+    }
+
+    private TrainerWorkloadRequest toWorkloadDeleteRequest(Training training) {
+        var trainer = training.getTrainer();
+        var user = trainer.getUser();
+        return TrainerWorkloadRequest.builder()
+                .actionType(ActionType.DELETE)
+                .trainerUsername(user.getUserName())
+                .trainerFirstName(user.getFirstName())
+                .trainerLastName(user.getLastName())
+                .isActive(user.getIsActive())
+                .trainingDate(training.getTrainingDate())
+                .trainingDuration(training.getTrainingDuration())
+                .build();
     }
 
     @Override

@@ -36,12 +36,19 @@ public class TransactionLoggingInterceptor implements HandlerInterceptor {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
                                 Object handler, Exception ex) {
         String transactionId = (String) request.getAttribute(TRANSACTION_ID);
+        int status = response.getStatus();
         if (ex != null) {
-            log.info("[transactionId={}] REST response {} {} status={} error={}",
-                    transactionId, request.getMethod(), request.getRequestURI(), response.getStatus(), ex.getMessage());
+            log.warn("[transactionId={}] REST response {} {} status={} error={}",
+                    transactionId, request.getMethod(), request.getRequestURI(), status, ex.getMessage());
+        } else if (status >= 500) {
+            log.error("[transactionId={}] REST response {} {} status={} message=Internal server error",
+                    transactionId, request.getMethod(), request.getRequestURI(), status);
+        } else if (status >= 400) {
+            log.warn("[transactionId={}] REST response {} {} status={} message=Client error",
+                    transactionId, request.getMethod(), request.getRequestURI(), status);
         } else {
-            log.error("[transactionId={}] REST response {} {} status={}",
-                    transactionId, request.getMethod(), request.getRequestURI(), response.getStatus());
+            log.info("[transactionId={}] REST response {} {} status={} message=OK",
+                    transactionId, request.getMethod(), request.getRequestURI(), status);
         }
         MDC.remove(TRANSACTION_ID);
     }

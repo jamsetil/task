@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.dto.request.TrainingRequestDTO;
 import org.example.service.TrainingService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,8 +19,9 @@ public class TrainingController {
 
     @PostMapping
     @Operation(summary = "add training", description = "create training session")
-    public ResponseEntity<Void> createTraining(@RequestBody @Valid TrainingRequestDTO requestDTO) {
-        trainingService.createTraining(requestDTO);
+    public ResponseEntity<Void> createTraining(@RequestBody @Valid TrainingRequestDTO requestDTO,
+                                               @RequestHeader("Authorization") String authorizationHeader){
+        trainingService.createTraining(requestDTO,authorizationHeader);
         return ResponseEntity.ok().build();
     }
 }

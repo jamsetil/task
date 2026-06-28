@@ -13,8 +13,10 @@ public interface TraineeRepository extends JpaRepository<Trainee, String> {
     Optional<Trainee> findByUsername(@Param("username") String username);
 
     @Query("""
-            SELECT t FROM Trainee t
-            LEFT JOIN FETCH t.trainings
+            SELECT DISTINCT t FROM Trainee t
+            LEFT JOIN FETCH t.trainings tr
+            LEFT JOIN FETCH tr.trainer trainer
+            LEFT JOIN FETCH trainer.user
             LEFT JOIN FETCH t.user
             WHERE t.user.userName = :username
             """)
