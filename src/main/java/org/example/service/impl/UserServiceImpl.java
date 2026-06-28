@@ -1,6 +1,7 @@
 package org.example.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.exception.AuthenticationException;
 import org.example.model.base.User;
 import org.example.repository.UserRepository;
@@ -10,10 +11,12 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -40,7 +43,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void changePassword(String username, String oldPassword, String newPassword) {
+    public void changePassword(String oldPassword, String newPassword) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("Changing password for user: {}", username);
         validateCredentialsPresent(username, oldPassword);
         try {
             authenticationManager.authenticate(
@@ -56,12 +61,6 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    @Override
-    public void logout(String authorizationHeader) {
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            jwtUtil.invalidateToken(authorizationHeader.substring(7));
-        }
-    }
 
     private static void validateCredentialsPresent(String username, String password) {
         if (username == null || username.isBlank()) {

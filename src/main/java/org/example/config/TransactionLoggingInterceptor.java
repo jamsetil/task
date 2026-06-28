@@ -40,7 +40,7 @@ public class TransactionLoggingInterceptor implements HandlerInterceptor {
             log.info("[transactionId={}] REST response {} {} status={} error={}",
                     transactionId, request.getMethod(), request.getRequestURI(), response.getStatus(), ex.getMessage());
         } else {
-            log.info("[transactionId={}] REST response {} {} status={}",
+            log.error("[transactionId={}] REST response {} {} status={}",
                     transactionId, request.getMethod(), request.getRequestURI(), response.getStatus());
         }
         MDC.remove(TRANSACTION_ID);

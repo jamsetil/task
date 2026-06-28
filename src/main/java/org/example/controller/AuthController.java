@@ -26,18 +26,10 @@ public class AuthController {
                 userService.authenticate(requestDTO.getUsername(), requestDTO.getPassword())));
     }
 
-    @PostMapping("/logout")
-    @Operation(summary = "logout", description = "invalidate current JWT bearer token")
-    public ResponseEntity<Void> logout(
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
-        userService.logout(authorizationHeader);
-        return ResponseEntity.ok().build();
-    }
-
     @PutMapping("/change-password")
     @Operation(summary = "change password", description = "update password using old and new values")
     public ResponseEntity<Void> changeLogin(@RequestBody @Valid ChangeLoginRequestDTO requestDTO) {
-        userService.changePassword(requestDTO.getUsername(), requestDTO.getOldPassword(), requestDTO.getNewPassword());
+        userService.changePassword(requestDTO.getOldPassword(), requestDTO.getNewPassword());
         return ResponseEntity.ok().build();
     }
 }

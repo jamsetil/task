@@ -12,8 +12,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
+import org.junit.jupiter.api.AfterEach;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -37,6 +40,11 @@ class UserServiceImplTest {
 
     @InjectMocks
     private UserServiceImpl userService;
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void authenticate_returnsJwtToken() {
@@ -68,13 +76,14 @@ class UserServiceImplTest {
 
     @Test
     void changePassword_validatesOldPasswordAndUpdates() {
+        setAuthenticatedUser("john");
         when(authenticationManager.authenticate(any()))
                 .thenReturn(new UsernamePasswordAuthenticationToken("john", null));
         when(userRepository.findByUserName("john")).thenReturn(Optional.of(
                 User.builder().userName("john").password("encoded").build()));
         when(passwordEncoder.encode("new")).thenReturn("encoded-new");
 
-        userService.changePassword("john", "old", "new");
+        userService.changePassword("old", "new");
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(userRepository).save(any(User.class));
@@ -82,18 +91,19 @@ class UserServiceImplTest {
 
     @Test
     void changePassword_userNotFound_throws() {
+        setAuthenticatedUser("missing");
         when(authenticationManager.authenticate(any()))
                 .thenReturn(new UsernamePasswordAuthenticationToken("missing", null));
         when(userRepository.findByUserName("missing")).thenReturn(Optional.empty());
 
         assertThrows(AuthenticationException.class,
-                () -> userService.changePassword("missing", "old", "new"));
+                () -> userService.changePassword("old", "new"));
     }
 
-    @Test
-    void logout_invalidatesToken() {
-        userService.logout("Bearer jwt-token");
-
-        verify(jwtUtil).invalidateToken("jwt-token");
+    private static void setAuthenticatedUser(String username) {
+        Authentication authentication = new UsernamePasswordAuthenticationToken(username, null);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
     }
 }

@@ -13,8 +13,6 @@ import lombok.ToString;
 @AllArgsConstructor
 public class ChangeLoginRequestDTO {
     @NotBlank
-    private String username;
-    @NotBlank
     @ToString.Exclude
     private String oldPassword;
     @NotBlank

@@ -1,9 +1,10 @@
 package org.example.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.example.filter.JwtAuthFilter;
 import org.example.security.BruteForceDaoAuthenticationProvider;
-import org.example.service.LoginAttemptService;
+import org.example.service.impl.LoginAttemptServiceImpl;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +35,7 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final JwtAuthEntryPoint jwtAuthEntryPoint;
+    private final JwtLogoutHandler logoutHandler;
 
     @Value("${cors.allowed-origins:*}")
     private String allowedOrigins;
@@ -52,7 +54,12 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .authenticationProvider(authenticationProvider);
+                .authenticationProvider(authenticationProvider)
+                .logout(logout -> logout
+                        .logoutUrl("/auth/logout")
+                        .addLogoutHandler(logoutHandler)
+                        .logoutSuccessHandler((request, response, authentication) ->
+                                response.setStatus(HttpServletResponse.SC_OK)));
         return httpSecurity.build();
     }
 
@@ -60,8 +67,8 @@ public class SecurityConfig {
     public AuthenticationProvider authenticationProvider(
             UserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder,
-            LoginAttemptService loginAttemptService) {
-        return new BruteForceDaoAuthenticationProvider(userDetailsService, passwordEncoder, loginAttemptService);
+            LoginAttemptServiceImpl loginAttemptServiceImpl) {
+        return new BruteForceDaoAuthenticationProvider(userDetailsService, passwordEncoder, loginAttemptServiceImpl);
     }
 
     @Bean

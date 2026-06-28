@@ -1,5 +1,6 @@
 package org.example.service;
 
+import org.example.service.impl.LoginAttemptServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -7,31 +8,31 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LoginAttemptServiceTest {
 
-    private LoginAttemptService loginAttemptService;
+    private LoginAttemptServiceImpl loginAttemptServiceImpl;
 
     @BeforeEach
     void setUp() {
-        loginAttemptService = new LoginAttemptService(3, 5);
+        loginAttemptServiceImpl = new LoginAttemptServiceImpl(3, 5);
     }
 
     @Test
     void loginFailed_blocksAfterMaxAttempts() {
-        loginAttemptService.loginFailed("john");
-        loginAttemptService.loginFailed("john");
-        assertFalse(loginAttemptService.isBlocked("john"));
+        loginAttemptServiceImpl.loginFailed("john");
+        loginAttemptServiceImpl.loginFailed("john");
+        assertFalse(loginAttemptServiceImpl.isBlocked("john"));
 
-        loginAttemptService.loginFailed("john");
-        assertTrue(loginAttemptService.isBlocked("john"));
+        loginAttemptServiceImpl.loginFailed("john");
+        assertTrue(loginAttemptServiceImpl.isBlocked("john"));
     }
 
     @Test
     void loginSucceeded_clearsAttempts() {
-        loginAttemptService.loginFailed("john");
-        loginAttemptService.loginFailed("john");
-        loginAttemptService.loginSucceeded("john");
+        loginAttemptServiceImpl.loginFailed("john");
+        loginAttemptServiceImpl.loginFailed("john");
+        loginAttemptServiceImpl.loginSucceeded("john");
 
-        loginAttemptService.loginFailed("john");
-        loginAttemptService.loginFailed("john");
-        assertFalse(loginAttemptService.isBlocked("john"));
+        loginAttemptServiceImpl.loginFailed("john");
+        loginAttemptServiceImpl.loginFailed("john");
+        assertFalse(loginAttemptServiceImpl.isBlocked("john"));
     }
 }

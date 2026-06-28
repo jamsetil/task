@@ -69,10 +69,9 @@ class RequestValidatorTest {
     }
 
     @Test
-    void validateLogin_blankUsername_throws() {
+    void validateChangePassword_blankOldPassword_throws() {
         var request = ChangeLoginRequestDTO.builder()
-                .username(" ")
-                .oldPassword("pwd")
+                .oldPassword(" ")
                 .newPassword("new")
                 .build();
         assertThrows(IllegalArgumentException.class, () -> validator.validate(request));

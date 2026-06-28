@@ -1,6 +1,6 @@
 package org.example.security;
 
-import org.example.service.LoginAttemptService;
+import org.example.service.impl.LoginAttemptServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -22,11 +22,11 @@ import static org.mockito.Mockito.when;
 class BruteForceDaoAuthenticationProviderTest {
 
     @Mock
-    private LoginAttemptService loginAttemptService;
+    private LoginAttemptServiceImpl loginAttemptServiceImpl;
 
     @Test
     void authenticate_lockedAccount_throwsLockedException() {
-        when(loginAttemptService.isBlocked("john")).thenReturn(true);
+        when(loginAttemptServiceImpl.isBlocked("john")).thenReturn(true);
         var provider = createProvider("encoded-password");
 
         assertThrows(LockedException.class,
@@ -35,7 +35,7 @@ class BruteForceDaoAuthenticationProviderTest {
 
     @Test
     void authenticate_validCredentials_succeeds() {
-        when(loginAttemptService.isBlocked("john")).thenReturn(false);
+        when(loginAttemptServiceImpl.isBlocked("john")).thenReturn(false);
         var provider = createProvider(new BCryptPasswordEncoder().encode("pwd"));
 
         var authentication = provider.authenticate(
@@ -46,7 +46,7 @@ class BruteForceDaoAuthenticationProviderTest {
 
     @Test
     void authenticate_invalidCredentials_incrementsFailedAttempts() {
-        when(loginAttemptService.isBlocked("john")).thenReturn(false);
+        when(loginAttemptServiceImpl.isBlocked("john")).thenReturn(false);
         var provider = createProvider(new BCryptPasswordEncoder().encode("pwd"));
 
         assertThrows(BadCredentialsException.class,
@@ -62,6 +62,6 @@ class BruteForceDaoAuthenticationProviderTest {
         return new BruteForceDaoAuthenticationProvider(
                 userDetailsService,
                 new BCryptPasswordEncoder(),
-                loginAttemptService);
+                loginAttemptServiceImpl);
     }
 }

@@ -1,6 +1,6 @@
 package org.example.util;
 
-import org.example.service.TokenBlacklistService;
+import org.example.service.impl.TokenBlacklistServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +15,7 @@ class JwtUtilTest {
         jwtUtil = new JwtUtil(
                 "testSecretKeyForJwtGenerationThatShouldBeLongEnough123456",
                 3600000,
-                new TokenBlacklistService());
+                new TokenBlacklistServiceImpl());
     }
 
     @Test

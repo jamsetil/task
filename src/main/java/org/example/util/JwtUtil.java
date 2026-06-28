@@ -3,7 +3,7 @@ package org.example.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.example.service.TokenBlacklistService;
+import org.example.service.impl.TokenBlacklistServiceImpl;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,15 +17,15 @@ public class JwtUtil {
 
     private final SecretKey key;
     private final long expirationTime;
-    private final TokenBlacklistService tokenBlacklistService;
+    private final TokenBlacklistServiceImpl tokenBlacklistServiceImpl;
 
     public JwtUtil(
             @Value("${jwt.secret}") String secretKey,
             @Value("${jwt.expiration-ms}") long expirationTime,
-            TokenBlacklistService tokenBlacklistService) {
+            TokenBlacklistServiceImpl tokenBlacklistServiceImpl) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.expirationTime = expirationTime;
-        this.tokenBlacklistService = tokenBlacklistService;
+        this.tokenBlacklistServiceImpl = tokenBlacklistServiceImpl;
     }
 
     public String generateToken(String username) {
@@ -38,7 +38,7 @@ public class JwtUtil {
     }
 
     public void invalidateToken(String token) {
-        tokenBlacklistService.blacklist(token);
+        tokenBlacklistServiceImpl.blacklist(token, extractExpiration(token).getTime());
     }
 
     public String extractUsername(String token) {
@@ -55,7 +55,7 @@ public class JwtUtil {
     }
 
     public boolean validateToken(String token, String username) {
-        if (tokenBlacklistService.isBlacklisted(token)) {
+        if (tokenBlacklistServiceImpl.isBlacklisted(token)) {
             return false;
         }
         String extractedUsername = extractUsername(token);

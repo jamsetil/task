@@ -56,18 +56,8 @@ class AuthControllerTest {
     }
 
     @Test
-    void logout_returnsOk() throws Exception {
-        mockMvc.perform(post("/auth/logout")
-                        .header("Authorization", "Bearer jwt-token"))
-                .andExpect(status().isOk());
-
-        verify(userService).logout("Bearer jwt-token");
-    }
-
-    @Test
     void changeLogin_returnsOk() throws Exception {
         var request = ChangeLoginRequestDTO.builder()
-                .username("john")
                 .oldPassword("old")
                 .newPassword("new")
                 .build();
@@ -77,6 +67,6 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(userService).changePassword("john", "old", "new");
+        verify(userService).changePassword("old", "new");
     }
 }
