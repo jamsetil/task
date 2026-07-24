@@ -102,11 +102,10 @@ class TraineeControllerTest {
 
     @Test
     void deleteTrainee_returnsOk() throws Exception {
-        mockMvc.perform(delete("/trainees/faiq.azizzade")
-                        .header("Authorization", "Bearer test-token"))
+        mockMvc.perform(delete("/trainees/faiq.azizzade"))
                 .andExpect(status().isOk());
 
-        verify(traineeService).deleteTrainee("faiq.azizzade", "Bearer test-token");
+        verify(traineeService).deleteTrainee("faiq.azizzade");
     }
 
     @Test

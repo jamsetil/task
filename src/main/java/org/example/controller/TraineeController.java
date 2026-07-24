@@ -59,9 +59,8 @@ public class TraineeController {
     @DeleteMapping("/{username}")
     @Operation(summary = "delete trainee profile", description = "hard delete trainee and trainings")
     public ResponseEntity<Void> deleteTrainee(
-            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username,
-            @RequestHeader("Authorization") String authorizationHeader) {
-        traineeService.deleteTrainee(username, authorizationHeader);
+            @Parameter(description = "username", required = true) @PathVariable(name = "username") String username) {
+        traineeService.deleteTrainee(username);
         return ResponseEntity.ok().build();
     }
 

@@ -4,12 +4,10 @@ spring:
     name: gym-crm
   profiles:
     default: local
-  cloud:
-    openfeign:
-      circuitbreaker:
-        enabled: true
-        alphanumeric-ids:
-          enabled: true
+  activemq:
+    broker-url: ${ACTIVEMQ_BROKER_URL:tcp://localhost:61616}
+    user: ${ACTIVEMQ_USER:admin}
+    password: ${ACTIVEMQ_PASSWORD:admin}
   jpa:
     hibernate:
       ddl-auto: update
@@ -22,16 +20,19 @@ spring:
 server:
   port: 8087
 
+app:
+  messaging:
+    trainer-workload-queue: trainer.workload.queue
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true
-
-  instance:
-    prefer-ip-address: true
+#eureka:
+#  client:
+#    service-url:
+#      defaultZone: http://localhost:8761/eureka/
+#    register-with-eureka: true
+#    fetch-registry: true
+#
+#  instance:
+#    prefer-ip-address: true
 
 springdoc:
   api-docs:
@@ -58,14 +59,6 @@ cors:
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [transactionId=%X{transactionId}] %-5level %logger{36} - %msg%n"
-
-resilience4j:
-  circuitbreaker:
-    instances:
-      trainerWorkloadService:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
 
 management:
   endpoints:

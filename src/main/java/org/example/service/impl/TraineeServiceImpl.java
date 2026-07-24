@@ -1,7 +1,6 @@
 package org.example.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.client.WorkloadClient;
 import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.TraineeTrainersUpdateRequestDTO;
@@ -14,6 +13,7 @@ import org.example.exception.ResourceNotFoundException;
 import org.example.mapper.TraineeMapper;
 import org.example.mapper.TrainerMapper;
 import org.example.mapper.TrainingMapper;
+import org.example.messaging.WorkloadMessagePublisher;
 import org.example.model.Trainee;
 import org.example.model.Training;
 import org.example.model.Trainer;
@@ -59,7 +59,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Autowired
     private JwtUtil jwtUtil;
     @Autowired
-    private WorkloadClient workloadClient;
+    private WorkloadMessagePublisher workloadMessagePublisher;
 
     @Override
     @Transactional
@@ -127,7 +127,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public void deleteTrainee(String username, String authorizationHeader) {
+    public void deleteTrainee(String username) {
         log.warn("Deleting trainee with username={}", username);
         Trainee trainee = traineeRepository.findByUsernameForDelete(username)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -135,8 +135,7 @@ public class TraineeServiceImpl implements TraineeService {
 
         if (trainee.getTrainings() != null) {
             trainee.getTrainings().forEach(training ->
-                    workloadClient.deleteTrainerWorkload(
-                            authorizationHeader, toWorkloadDeleteRequest(training)));
+                    workloadMessagePublisher.publish(toWorkloadDeleteRequest(training)));
         }
 
         trainee.getTrainers().clear();

@@ -1,6 +1,5 @@
 package org.example.service.impl;
 
-import org.example.client.WorkloadClient;
 import org.example.dto.TrainingCriteria;
 import org.example.dto.request.TraineeRequestDTO;
 import org.example.dto.request.create.TraineeCreateRequestDTO;
@@ -9,6 +8,7 @@ import org.example.exception.ResourceNotFoundException;
 import org.example.mapper.TraineeMapperImpl;
 import org.example.mapper.TrainerMapperImpl;
 import org.example.mapper.TrainingMapperImpl;
+import org.example.messaging.WorkloadMessagePublisher;
 import org.example.model.Trainee;
 import org.example.model.Trainer;
 import org.example.model.Training;
@@ -58,7 +58,7 @@ class TraineeServiceImplTest {
     @Mock
     private JwtUtil jwtUtil;
     @Mock
-    private WorkloadClient workloadClient;
+    private WorkloadMessagePublisher workloadMessagePublisher;
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
@@ -146,7 +146,7 @@ class TraineeServiceImplTest {
     void deleteTrainee_notFound_throws() {
         when(traineeRepository.findByUsernameForDelete("missing")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> traineeService.deleteTrainee("missing", "Bearer token"));
+        assertThrows(ResourceNotFoundException.class, () -> traineeService.deleteTrainee("missing"));
     }
 
     @Test
@@ -216,9 +216,9 @@ class TraineeServiceImplTest {
 
         when(traineeRepository.findByUsernameForDelete("john.smith")).thenReturn(Optional.of(trainee));
 
-        traineeService.deleteTrainee("john.smith", "Bearer token");
+        traineeService.deleteTrainee("john.smith");
 
-        verify(workloadClient).deleteTrainerWorkload(eq("Bearer token"), argThat(request ->
+        verify(workloadMessagePublisher).publish(argThat(request ->
                 ActionType.DELETE.equals(request.getActionType())
                         && "trainer1".equals(request.getTrainerUsername())
                         && Integer.valueOf(60).equals(request.getTrainingDuration())));

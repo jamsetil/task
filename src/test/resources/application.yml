@@ -6,12 +6,13 @@ spring:
     hibernate:
       ddl-auto: create-drop
     database-platform: org.hibernate.dialect.H2Dialect
-  cloud:
-    openfeign:
-      circuitbreaker:
-        enabled: true
-        alphanumeric-ids:
-          enabled: true
+  activemq:
+    broker-url: vm://localhost?broker.persistent=false
+    in-memory: true
+
+app:
+  messaging:
+    trainer-workload-queue: trainer.workload.queue
 
 eureka:
   client:
