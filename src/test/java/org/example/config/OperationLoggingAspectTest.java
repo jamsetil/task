@@ -1,5 +1,6 @@
 package org.example.config;
 
+import org.example.model.Training;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -20,5 +21,10 @@ class OperationLoggingAspectTest {
         assertEquals("collection(size=2)", OperationLoggingAspect.summarizeResult(List.of("a", "b")));
         assertEquals("empty", OperationLoggingAspect.summarizeResult(Optional.empty()));
         assertTrue(OperationLoggingAspect.summarizeResult(Optional.of("value")).contains("value"));
+    }
+
+    @Test
+    void summarizeResult_avoidsEntityToString() {
+        assertEquals("Training", OperationLoggingAspect.summarizeResult(Training.builder().build()));
     }
 }

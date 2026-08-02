@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
@@ -29,18 +30,18 @@ public class Training {
     @Column(nullable = false)
     Integer trainingDuration;
 
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "trainee_id")
     Trainee trainee;
 
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "trainer_id")
     Trainer trainer;
 
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "training_type_id")
     TrainingType trainingType;
-
-
-
 }

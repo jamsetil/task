@@ -74,8 +74,16 @@ public class OperationLoggingAspect {
             return "collection(size=" + collection.size() + ")";
         }
         if (result instanceof Optional<?> optional) {
-            return optional.map(Object::toString).orElse("empty");
+            return optional.map(OperationLoggingAspect::summarizeResult).orElse("empty");
+        }
+        String className = result.getClass().getSimpleName();
+        if (className.contains("$$") || isEntityLike(result)) {
+            return className;
         }
         return result.toString();
+    }
+
+    private static boolean isEntityLike(Object result) {
+        return result.getClass().isAnnotationPresent(jakarta.persistence.Entity.class);
     }
 }
