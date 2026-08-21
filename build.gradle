@@ -66,6 +66,13 @@ dependencyManagement {
 test {
     useJUnitPlatform()
     finalizedBy jacocoTestReport
+    // CLI examples (quote on PowerShell):
+    //   ./gradlew test "-Dcucumber.filter.tags=@login"
+    //   ./gradlew test "-PcucumberTags=@login"
+    def cucumberTags = project.findProperty('cucumberTags') ?: System.getProperty('cucumber.filter.tags')
+    if (cucumberTags != null && !cucumberTags.toString().isBlank()) {
+        systemProperty 'cucumber.filter.tags', cucumberTags.toString()
+    }
 }
 
 jacoco {

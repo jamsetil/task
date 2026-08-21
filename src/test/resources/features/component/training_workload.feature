@@ -4,7 +4,7 @@ Feature: Gym CRM training and workload publishing
   I want training lifecycle events to publish correct workload messages
   So that the secondary microservice can track trainer hours
 
-  @positive
+  @positive @trainings
   Scenario: Creating a training publishes an ADD workload message
     Given a registered trainee and trainer for cucumber component tests
     And I am authenticated as the registered trainee
@@ -12,14 +12,14 @@ Feature: Gym CRM training and workload publishing
     Then the response status should be 200
     And a workload message should be published with actionType "ADD" and duration 75
 
-  @negative
+  @negative @trainings @permissions
   Scenario: Creating a training without authentication is rejected
     Given a registered trainee and trainer for cucumber component tests
     When I create a training with duration 60 for the registered users without authentication
     Then the response status should be 401
     And no workload message should be published
 
-  @negative
+  @negative @trainings
   Scenario: Creating a training for a missing trainer is rejected
     Given a registered trainee and trainer for cucumber component tests
     And I am authenticated as the registered trainee
@@ -27,7 +27,7 @@ Feature: Gym CRM training and workload publishing
     Then the response status should be 404
     And no workload message should be published
 
-  @negative
+  @negative @trainings
   Scenario: Creating a training for a missing trainee is rejected
     Given a registered trainee and trainer for cucumber component tests
     And I am authenticated as the registered trainee
@@ -35,7 +35,7 @@ Feature: Gym CRM training and workload publishing
     Then the response status should be 404
     And no workload message should be published
 
-  @negative
+  @negative @trainings
   Scenario: Creating a training with inactive trainee is rejected
     Given a registered trainee and trainer for cucumber component tests
     And I am authenticated as the registered trainee
@@ -44,7 +44,7 @@ Feature: Gym CRM training and workload publishing
     Then the response status should be 400
     And no workload message should be published
 
-  @negative
+  @negative @trainings
   Scenario: Creating a training with inactive trainer is rejected
     Given a registered trainee and trainer for cucumber component tests
     And I am authenticated as the registered trainee
@@ -53,7 +53,7 @@ Feature: Gym CRM training and workload publishing
     Then the response status should be 400
     And no workload message should be published
 
-  @negative
+  @negative @trainings
   Scenario: Creating a training with invalid duration is rejected
     Given a registered trainee and trainer for cucumber component tests
     And I am authenticated as the registered trainee
@@ -61,7 +61,7 @@ Feature: Gym CRM training and workload publishing
     Then the response status should be 400
     And no workload message should be published
 
-  @positive
+  @positive @trainees @trainings
   Scenario: Deleting trainee with a training publishes DELETE workload message
     Given a registered trainee and trainer for cucumber component tests
     And I am authenticated as the registered trainee
@@ -71,7 +71,7 @@ Feature: Gym CRM training and workload publishing
     Then the response status should be 200
     And a workload message should be published with actionType "DELETE" and duration 55
 
-  @positive
+  @positive @trainees
   Scenario: Deleting trainee without trainings publishes no workload message
     Given a registered trainee and trainer for cucumber component tests
     And I am authenticated as the registered trainee
@@ -80,7 +80,7 @@ Feature: Gym CRM training and workload publishing
     Then the response status should be 200
     And no workload message should be published
 
-  @negative
+  @negative @trainees
   Scenario: Deleting unknown trainee is rejected
     Given a registered trainee and trainer for cucumber component tests
     And I am authenticated as the registered trainee

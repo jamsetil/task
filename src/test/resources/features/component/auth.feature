@@ -4,30 +4,30 @@ Feature: Gym CRM authentication
   I want login and password flows to be secure
   So that only valid users can access protected APIs
 
-  @positive
+  @positive @login
   Scenario: Successful login returns a JWT token
     Given a registered trainee named "Auth" "Success"
     When I login with the registered trainee credentials
     Then the response status should be 200
     And the response should contain a JWT token
 
-  @negative
+  @negative @login
   Scenario: Login with wrong password is rejected
     Given a registered trainee named "Auth" "WrongPass"
     When I login with username of registered trainee and password "incorrect-password"
     Then the response status should be 401
 
-  @negative
+  @negative @login
   Scenario: Login with unknown user is rejected
     When I login with username "ghost.user" and password "any-password123"
     Then the response status should be 401
 
-  @negative
+  @negative @login
   Scenario: Login with blank password is rejected
     When I login with username "john.doe" and password " "
     Then the response status should be 400
 
-  @negative
+  @negative @login @permissions
   Scenario: Account is locked after three failed login attempts
     Given a registered trainee named "Lock" "Account"
     When I fail login 3 times for the registered trainee
@@ -35,19 +35,19 @@ Feature: Gym CRM authentication
     Then the response status should be 401
     And the response message should contain "locked"
 
-  @positive
+  @positive @change-password
   Scenario: Change password with valid old password
     Given a registered trainee named "Pwd" "Change"
     And I am authenticated as the registered trainee
     When I change password from the registered password to "NewPass123!"
     Then the response status should be 200
 
-  @negative
+  @negative @change-password @permissions
   Scenario: Change password without authentication is rejected
     When I change password from "old" to "new" without authentication
     Then the response status should be 401
 
-  @positive
+  @positive @logout
   Scenario: Logout succeeds for authenticated user
     Given a registered trainee named "Log" "Out"
     And I am authenticated as the registered trainee
