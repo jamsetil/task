@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.request.TrainingRequestDTO;
 import org.example.service.TrainingService;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/trainings")
 @RequiredArgsConstructor
 @Tag(name = "trainings", description = "training session operations")
+@Profile("!docker")
+
 public class TrainingController {
     private final TrainingService trainingService;
 

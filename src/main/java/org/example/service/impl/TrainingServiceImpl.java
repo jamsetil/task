@@ -16,6 +16,7 @@ import org.example.repository.TrainingRepository;
 import org.example.service.TrainingService;
 import org.example.validation.RequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,8 @@ import java.util.List;
 @Slf4j
 @Service
 @Transactional(readOnly = true)
+@Profile("!docker")
+
 public class TrainingServiceImpl implements TrainingService {
 
     @Autowired

@@ -1,12 +1,15 @@
 package org.example.service.impl;
 
 import org.example.service.TokenBlacklistService;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@Profile("!docker")
+
 public class TokenBlacklistServiceImpl implements TokenBlacklistService {
 
     private final ConcurrentHashMap<String, Long> blacklistedTokens = new ConcurrentHashMap<>();

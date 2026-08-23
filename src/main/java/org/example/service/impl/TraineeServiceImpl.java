@@ -26,6 +26,7 @@ import org.example.util.CredentialGenerator;
 import org.example.util.JwtUtil;
 import org.example.validation.RequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,8 @@ import java.util.List;
 @Slf4j
 @Service
 @Transactional(readOnly = true)
+@Profile("!docker")
+
 public class TraineeServiceImpl implements TraineeService {
 
     @Autowired

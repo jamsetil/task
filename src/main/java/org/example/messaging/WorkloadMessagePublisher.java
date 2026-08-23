@@ -6,12 +6,14 @@ import org.example.config.TransactionLoggingInterceptor;
 import org.example.dto.request.TrainerWorkloadRequest;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Profile("!docker")
 public class WorkloadMessagePublisher {
 
     private final JmsTemplate jmsTemplate;

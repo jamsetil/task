@@ -11,6 +11,7 @@ import org.example.dto.request.create.TraineeCreateRequestDTO;
 import org.example.dto.response.TraineeResponseDTO;
 import org.example.dto.response.TrainerResponseDTO;
 import org.example.service.TraineeService;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,8 @@ import java.util.List;
 @RequestMapping("/trainees")
 @RequiredArgsConstructor
 @Tag(name = "trainees", description = "trainee profile operations")
+@Profile("!docker")
+
 public class TraineeController {
 
     private final TraineeService traineeService;

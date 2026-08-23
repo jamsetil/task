@@ -9,6 +9,7 @@ import org.example.dto.request.TrainerRequestDTO;
 import org.example.dto.request.create.TrainerCreateRequestDTO;
 import org.example.dto.response.TrainerResponseDTO;
 import org.example.service.TrainerService;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +19,8 @@ import java.time.LocalDate;
 @RequestMapping("/trainers")
 @RequiredArgsConstructor
 @Tag(name = "trainers", description = "trainer profile operations")
+@Profile("!docker")
+
 public class TrainerController {
     private final TrainerService trainerService;
 

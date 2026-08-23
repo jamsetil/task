@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.repository.TraineeRepository;
 import org.example.repository.TrainerRepository;
 import org.example.repository.UserRepository;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Profile("!docker")
 @RequiredArgsConstructor
 public class GymUserDetailsService implements UserDetailsService {
 

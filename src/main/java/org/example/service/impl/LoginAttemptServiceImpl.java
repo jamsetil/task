@@ -2,9 +2,12 @@ package org.example.service.impl;
 
 import org.example.service.LoginAttemptService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ConcurrentHashMap;
+
+@Profile("!docker")
 
 @Service
 public class LoginAttemptServiceImpl implements LoginAttemptService {

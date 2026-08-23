@@ -7,6 +7,7 @@ import org.example.model.base.User;
 import org.example.repository.UserRepository;
 import org.example.service.UserService;
 import org.example.util.JwtUtil;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Profile("!docker")
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;

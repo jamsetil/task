@@ -8,6 +8,7 @@ import org.example.dto.request.ChangeLoginRequestDTO;
 import org.example.dto.request.LoginRequestDTO;
 import org.example.dto.response.JwtResponseDTO;
 import org.example.service.UserService;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name = "authentication", description = "login and password operations")
+@Profile("!docker")
 public class AuthController {
 
     private final UserService userService;
