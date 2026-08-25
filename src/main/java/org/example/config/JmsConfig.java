@@ -9,7 +9,7 @@ import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.converter.MessageType;
 
 @Configuration
-@Profile("!docker")
+@Profile("!docker | docker-net")
 public class JmsConfig {
 
     @Bean

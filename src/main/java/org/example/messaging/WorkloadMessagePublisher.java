@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Profile("!docker")
+@Profile("!docker | docker-net")
 public class WorkloadMessagePublisher {
 
     private final JmsTemplate jmsTemplate;

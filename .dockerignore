@@ -1,0 +1,9 @@
+.gradle
+.git
+.idea
+*.iml
+*.md
+out
+bin
+src/test
+build

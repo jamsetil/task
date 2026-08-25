@@ -1,0 +1,45 @@
+# SubTask 2: Main MS with DB + queue on the SHARED app-net
+# Start workload stack first (creates app-net + activemq + mongo), then:
+#   docker compose up -d --build
+services:
+  gym-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: gymcrm
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gymcrm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gym-crm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gym-crm:latest
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker-net
+      SPRING_DATASOURCE_URL: jdbc:postgresql://gym-db:5432/gymcrm
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      # Same ActiveMQ as trainer-workload-service (on app-net)
+      ACTIVEMQ_BROKER_URL: tcp://activemq:61616
+      ACTIVEMQ_USER: admin
+      ACTIVEMQ_PASSWORD: admin
+      JWT_SECRET: mySuperSecretKeyForJwtGenerationThatShouldBeLongEnough12345
+    depends_on:
+      gym-db:
+        condition: service_healthy
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    external: true
+    name: app-net
